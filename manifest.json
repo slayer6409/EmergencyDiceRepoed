@@ -1,0 +1,10 @@
+{
+    "name": "Emergency_Dice_REPOED",
+    "version_number": "1.0.2",
+    "website_url": "",
+    "description": "Dice??? First Lethal Company now here?!?",
+    "dependencies": [
+        "BepInEx-BepInExPack-5.4.2100",
+        "Zehs-REPOLib-1.4.2"
+    ]
+}
