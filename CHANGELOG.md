@@ -4,7 +4,7 @@
     - A few new events
     - Sorry not sorry >:D
     - There is a disabled effect by default just in case since some people wouldn't like it, but check it out if you dare xD
-      - it might be kind of wonky sometimes with modded enemies or gnomes
+      - it might be kind of wonky sometimes with modded enemies or gnomes 
   
 - **1.0.3**
     - Added a bunch of new events
