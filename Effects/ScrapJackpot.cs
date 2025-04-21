@@ -11,7 +11,7 @@ public class ScrapJackpot : IEffect
     public string Name => "Scrap Jackpot";
     public EffectType Outcome => EffectType.Great;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "Scrap Jackpot";
+    public string Tooltip => "Lets go gambling!";
 
     public void Use(PlayerAvatar roller)
     {

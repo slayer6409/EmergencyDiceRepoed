@@ -1,3 +1,21 @@
+- **1.0.4**
+    - Made sacrificer teleport first then spawn things
+    - Possibly fixed revives spawning out of bounds by teleporting the head to the truck first
+    - A few new events
+    - Sorry not sorry >:D
+    - There is a disabled effect by default just in case since some people wouldn't like it, but check it out if you dare xD
+      - it might be kind of wonky sometimes with modded enemies or gnomes
+  
+- **1.0.3**
+    - Added a bunch of new events
+    - Added a way to tell what you rolled (with or without spoilers)
+    - fixed some issues 
+    - it might work slightly in singleplayer, but some things might still not work in singleplayer
+    - Added a config option to change how hard you need to throw it for it to register a roll
+    - Added a few new dice!
+    - hehehehe
+    - Hopefully I didn't break anything, but it seems to work well with testing 
+
 - **1.0.2**
     - Added a new event
     - Added sounds

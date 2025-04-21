@@ -17,6 +17,6 @@ public class BEEGGNOME : IEffect
     public void Use(PlayerAvatar roller)
     { 
         Vector3 spawnPos = roller.transform.position + roller.transform.forward;
-        Misc.SpawnAndScaleEnemy("Gnome", 2, spawnPos, new Vector3(3f, 3f, 3f));
+        Misc.SpawnAndScaleEnemy("Gnome", 1, spawnPos, new Vector3(3f, 3f, 3f));
     }
 }

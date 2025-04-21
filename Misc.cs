@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BepInEx.Logging;
 using Photon.Pun;
 using REPOLib.Extensions;
 using REPOLib.Modules;
 using UnityEngine;
 using Logger = Photon.Voice.Unity.Logger;
+using Random = UnityEngine.Random;
 
 namespace RepoDice;
 
@@ -21,10 +23,25 @@ public class Misc : MonoBehaviour
         tall,
         veryTall
     }
+
+    public enum UpgradeType
+    {
+        health,
+        energy,
+        strength,
+        jumps,
+        speed,
+        range
+    }
+    public static T GetRandomEnum<T>() where T : Enum
+    {
+        Array values = Enum.GetValues(typeof(T));
+        return (T)values.GetValue(UnityEngine.Random.Range(0, values.Length));
+    }
     
     public static readonly Dictionary<Size, List<GameObject>> valuablePrefabsBySize = new();
     public static readonly Dictionary<string, GameObject> valuablePrefabsByName = new();
-   public static void CacheValuables()
+    public static void CacheValuables()
     {
         valuablePrefabsBySize.Clear();
         valuablePrefabsByName.Clear();
@@ -64,8 +81,7 @@ public class Misc : MonoBehaviour
                         {
                             if (item != null)
                             {
-                                
-                                if(RepoDice.ExtendedLogging.Value) RepoDice.Logger.LogInfo($"Found Valuable Preset: {item.name}");
+                                RepoDice.SuperLog($"Found Valuable Preset: {item.name}");
                                 if (!list.Contains(item))
                                     list.Add(item);
 
@@ -188,15 +204,51 @@ public class Misc : MonoBehaviour
         int index = UnityEngine.Random.Range(0, players.Count);
         return players[index];
     }
-    public static void SpawnEnemy(string enemyName, int count, Vector3 spawnPos)
+    public static void SpawnEnemy(string enemyName, int count, Vector3 position, bool isFreebird = false)
     {
         try
         {
-            if(EnemyDirector.instance.TryGetEnemyThatContainsName(enemyName, out EnemySetup enemy))
+            
+            if(EnemyDirector.instance.TryGetEnemyByName(enemyName, out EnemySetup enemy))
             {
+                Vector3 spawnPos = position+Vector3.forward+Vector3.forward;
+                int counter = 0;
+                bool isValid = Misc.IsValidGround(spawnPos);
+                while (!isValid)
+                {
+                    counter++;
+                    spawnPos = (position + new Vector3(Random.Range(-3,4), Random.Range(0.8f,1.8f), Random.Range(-3,4)));
+                    isValid = Misc.IsValidGround(spawnPos);
+                    if(counter>5)break;
+                }
+                LevelPoint? levelPoint = SemiFunc.LevelPointGet(position, 4, 20);
+                if (!isValid)
+                {
+                    if (levelPoint == null) return;
+                    spawnPos = levelPoint.transform.position;
+                }
+                
                 for (int i = 0; i < count; i++)
                 { 
-                    Enemies.SpawnEnemy(enemy, spawnPos+Vector3.forward+Vector3.forward, Quaternion.identity, spawnDespawned: false);
+                    
+
+                    var enemies = Enemies.SpawnEnemy(enemy, spawnPos, Quaternion.identity, spawnDespawned: false);
+                    RepoDice.SuperLog($"Spawned {enemies.Count} enemies for '{enemyName}'");
+                    if (isFreebird)
+                    {
+                        foreach (var en in enemies)
+                        {
+                            if (SemiFunc.IsMultiplayer())
+                            {
+                                if(SemiFunc.IsMasterClient()) Networker.Instance.makeFreebirdRpc(en.photonView.ViewID);
+                                else Networker.Instance.photonView.RPC("makeFreebirdRpc", RpcTarget.Others, en.photonView.ViewID);
+                            }
+                            else
+                            {
+                                Networker.Instance.makeFreebirdRpc(en.photonView.ViewID);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -204,22 +256,83 @@ public class Misc : MonoBehaviour
         {
         }
     }
-    public static void SpawnAndScaleEnemy(string enemyName, int count, Vector3 spawnPos, Vector3 scale)
+    
+    public static void MakeGlass(Material mat, float alpha = 0.3f, bool fucky = false)
     {
-        if (RepoDice.ExtendedLogging.Value)
+        Color originalColor = mat.color;
+        if (fucky)
         {
-            foreach (var enmy in EnemyDirector.instance.GetEnemies())
+            Shader standardShader = Shader.Find("Autodesk Interactive");
+            if (standardShader == null)
             {
-                RepoDice.Logger.LogInfo($"Enemy Found: {enmy.name}");
+                RepoDice.SuperLog("Autodesk Interactive shader not found!");
+                return;
+            }
+            mat.shader = standardShader;
+            
+        }
+        else
+        {
+            if (mat.shader.name == "Autodesk Interactive")
+            {
+                Shader standardShader = Shader.Find("Standard");
+                if (standardShader == null)
+                {
+                    RepoDice.SuperLog("Standard shader not found!");
+                    return;
+                }
+                mat.shader = standardShader;
             }
         }
+        
+        // Switch to Transparent rendering mode
+        mat.SetFloat("_Mode", 3);
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetInt("_ZWrite", 0);
+        mat.DisableKeyword("_ALPHATEST_ON");
+        mat.EnableKeyword("_ALPHABLEND_ON");
+        mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+
+        // Adjust color alpha
+        Color color = originalColor;
+        color.a = alpha;
+        mat.color = color;
+    }
+    
+    public static void SpawnAndScaleEnemy(string enemyName, int count, Vector3 position, Vector3 scale)
+    {
+        if(RepoDice.ExtendedLogging.Value)
+            foreach (var enmy in EnemyDirector.instance.GetEnemies())
+            {
+                RepoDice.SuperLog($"Enemy Found: {enmy.name}");
+            }
         try
         {
-            if(EnemyDirector.instance.TryGetEnemyThatContainsName(enemyName, out EnemySetup enemy))
+            if(EnemyDirector.instance.TryGetEnemyByName(enemyName, out EnemySetup enemy))
             {
+                RepoDice.SuperLog("Spawning enemy: "+ enemy.name);
+                Vector3 spawnPos = position+Vector3.forward+Vector3.forward;
+                int counter = 0;
+                bool isValid = Misc.IsValidGround(spawnPos);
+                while (!isValid)
+                {
+                    counter++;
+                    spawnPos = (position + new Vector3(Random.Range(-3,4), Random.Range(0.8f,1.8f), Random.Range(-3,4)));
+                    isValid = Misc.IsValidGround(spawnPos);
+                    if(counter>5)break;
+                }
+                LevelPoint? levelPoint = SemiFunc.LevelPointGet(position, 4, 20);
+                if (!isValid)
+                {
+                    if (levelPoint == null) return;
+                    spawnPos = levelPoint.transform.position;
+                }
+                
                 for (int i = 0; i < count; i++)
                 { 
-                    var spawnedEnemies = Enemies.SpawnEnemy(enemy, spawnPos+Vector3.forward+Vector3.forward, Quaternion.identity, spawnDespawned: false);
+                    var spawnedEnemies = Enemies.SpawnEnemy(enemy, spawnPos, Quaternion.identity, spawnDespawned: false);
                     foreach (EnemyParent ep in spawnedEnemies)
                     {
                         var view = ep.GetComponent<PhotonView>();
@@ -227,7 +340,7 @@ public class Misc : MonoBehaviour
                         {
                             if (SemiFunc.IsMasterClientOrSingleplayer())
                             {
-                                Networker.Instance.photonView.RPC("SetScale", RpcTarget.Others, view.ViewID, scale); 
+                                if(SemiFunc.IsMultiplayer()) Networker.Instance.photonView.RPC("SetScale", RpcTarget.Others, view.ViewID, scale); 
                                 Networker.Instance.SetScale(view.ViewID, scale);
                             }
                        
@@ -238,7 +351,7 @@ public class Misc : MonoBehaviour
         }
         catch (Exception e)
         {
-            
+            RepoDice.SuperLog(e.Message, LogLevel.Error);
         }
         
     }

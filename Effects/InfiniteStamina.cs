@@ -8,7 +8,7 @@ namespace RepoDice.Effects;
 
 public class InfiniteStamina : IEffect
 {
-    public string Name => "InfiniteStamina";
+    public string Name => "Infinite Stamina";
     public EffectType Outcome => EffectType.Great;
     public bool ShowDefaultTooltip => true;
     public string Tooltip => "You can run!";

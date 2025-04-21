@@ -7,16 +7,16 @@ using UnityEngine;
 
 namespace RepoDice.Effects;
 
-public class Robe : IEffect
+public class Hidden : IEffect
 {
-    public string Name => "Robe";
-    public EffectType Outcome => EffectType.Awful;
+    public string Name => "Hidden";
+    public EffectType Outcome => EffectType.Bad;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "Fresh out of the shower";
+    public string Tooltip => "Probably Nothing";
 
     public void Use(PlayerAvatar roller)
-    {
+    { 
         Vector3 spawnPos = roller.transform.position + roller.transform.forward;
-        Misc.SpawnEnemy("Robe", 1, spawnPos);
+        Misc.SpawnEnemy("Hidden", 3, spawnPos);
     }
 }

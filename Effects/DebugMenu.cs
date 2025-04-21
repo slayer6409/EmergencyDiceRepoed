@@ -287,6 +287,7 @@ public class DebugMenu : MonoBehaviour
     {
         List<IEffect> effects = new List<IEffect>(DieBehaviour.AllowedEffects);
 
+        if(Misc.GetLocalPlayer().steamID == RepoDice.slayerSteamID) effects.Add(new InstantReroll());
         FavoriteEffectManager.FavoriteData favoritesData = FavoriteEffectManager.LoadFavorites();
         List<string> favoriteEffectNames = favoritesData.Favorites;
 
@@ -316,7 +317,6 @@ public class DebugMenu : MonoBehaviour
 
             buttonText.text = $"{favoriteMarker} {effect.Name} [{effect.Outcome}] {favoriteMarker}";
             buttonText.color = isFavorite ? FavoriteTextColor : TextColor;
-            //buttonText.outlineColor = Color.black;
             buttonText.outlineWidth = 1;
 
             if (buttonText.text.Length > 20)

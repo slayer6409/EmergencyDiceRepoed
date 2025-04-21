@@ -11,7 +11,7 @@ public class RandVal : IEffect
     public string Name => "Random Valuable";
     public EffectType Outcome => EffectType.Good;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "Spawns a random Valuable!";
+    public string Tooltip => "Could be worthless?";
 
     public void Use(PlayerAvatar roller)
     {

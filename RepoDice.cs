@@ -17,11 +17,10 @@ namespace RepoDice;
 
 //Yes I know my coding is a bit weird 
 
-[BepInPlugin("Slayer6409.EmergencyDiceREPO", "Emergency Dice REPO", "1.0.2")]
+[BepInPlugin("Slayer6409.EmergencyDiceREPO", "Emergency Dice REPO", "1.0.4")]
 [BepInDependency(REPOLib.MyPluginInfo.PLUGIN_GUID)]
 [BepInDependency("bulletbot.moreupgrades", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("WesleysEnemies", BepInDependency.DependencyFlags.SoftDependency)]
-[BepInDependency("Vortex.BigNuke", BepInDependency.DependencyFlags.SoftDependency)]
 public class RepoDice : BaseUnityPlugin
 {
     internal static RepoDice Instance { get; private set; } = null!;
@@ -33,8 +32,12 @@ public class RepoDice : BaseUnityPlugin
     public static ConfigEntry<string> DebugMenuColor;
     public static ConfigEntry<bool> DebugMenuColorUsesPlayerColor;
     public static ConfigEntry<string> DebugMenuAllow;
+    public static ConfigEntry<float> throwSpeed;
     public static ConfigEntry<bool> DebugMenuClosesAfter;
     public static ConfigEntry<bool> Bald;
+    public static ConfigEntry<bool> SpoilerMode;
+    public static ConfigEntry<bool> Copyright;
+    public static ConfigEntry<bool> muteFreebird;
     public static ConfigEntry<float> Volume;
     private InputAction debugMenuAction;
     private InputAction debugMenuAction2;
@@ -47,10 +50,13 @@ public class RepoDice : BaseUnityPlugin
     
     public static AssetBundle LoadedAssets;
 
-    public static readonly string slayerSteamID = "76561198077184650", machoSteamID = "76561198216220844", glitchSteamID = "76561198984467725";
+    public static readonly string slayerSteamID = "76561198077184650",
+        machoSteamID = "76561198216220844",
+        glitchSteamID = "76561198984467725",
+        lizzieSteamID = "76561199094139351";
     internal Harmony? Harmony { get; set; }
     public static Sprite WarningExclamation, WarningDeath, WarningLuck;
-    public static GameObject Gambler;
+    public static GameObject Gambler, Saint, Sacrificer, RainbowDice;
 
     public static List<string> RegisteredDiceNames = new List<string>();
     
@@ -91,12 +97,32 @@ public class RepoDice : BaseUnityPlugin
         WarningExclamation = LoadedAssets.LoadAsset<Sprite>("Warning");
         WarningDeath = LoadedAssets.LoadAsset<Sprite>("death");
         WarningLuck = LoadedAssets.LoadAsset<Sprite>("luck");
+
+        #region Dice
+
         Gambler = LoadedAssets.LoadAsset<GameObject>("Gambler");
         RegisteredDiceNames.Add("Gambler");
         Gambler.AddComponent<Gambler>();
+        REPOLib.Modules.Valuables.RegisterValuable(Gambler);
+        Saint = LoadedAssets.LoadAsset<GameObject>("Saint");
+        RegisteredDiceNames.Add("Saint");
+        Saint.AddComponent<Saint>();
+        REPOLib.Modules.Valuables.RegisterValuable(Saint);
+        Sacrificer = LoadedAssets.LoadAsset<GameObject>("Sacrificer");
+        RegisteredDiceNames.Add("Sacrificer");
+        Sacrificer.AddComponent<Sacrificer>();
+        REPOLib.Modules.Valuables.RegisterValuable(Sacrificer);
+        RainbowDice = LoadedAssets.LoadAsset<GameObject>("RainbowDice");
+        RegisteredDiceNames.Add("RainbowDice");
+        RainbowDice.AddComponent<Rainbow>();
+        REPOLib.Modules.Valuables.RegisterValuable(RainbowDice);
+
+
+        
+        #endregion
+       
         networker = LoadedAssets.LoadAsset<GameObject>("Dice Manager");
         networker.AddComponent<Networker>();
-        REPOLib.Modules.Valuables.RegisterValuable(Gambler);
         REPOLib.Modules.NetworkPrefabs.RegisterNetworkPrefab(networker);
         ConfigGen();
         DieBehaviour.Config();
@@ -125,6 +151,14 @@ public class RepoDice : BaseUnityPlugin
         }
     }
 
+    public static void SuperLog(string message, LogLevel level = LogLevel.Info)
+    {
+        if (ExtendedLogging.Value)
+        {
+            Logger.Log(level, message);
+        }
+    }
+    
     public void ConfigGen()
     {
         DebugMenuColor = Config.Bind<string>(
@@ -167,6 +201,26 @@ public class RepoDice : BaseUnityPlugin
             "SteamIDS",
             "",
             "Put SteamIDs here for people you want to be able to use the debug menu. Host Only");
+        throwSpeed = Config.Bind<float>(
+            "Dice",
+            "Throw Speed",
+            8f,
+            "Sets how hard you have to throw the dice to trigger the roll");
+        SpoilerMode = Config.Bind<bool>(
+            "Dice",
+            "Spoiler Mode",
+            false,
+            "If set to true, when it reads out your roll, it will just say what you rolled instead of a funny hint");
+        Copyright = Config.Bind<bool>(
+            "Client Side",
+            "Copyright Free",
+            false,
+            "Changes Copyright Audio");
+        muteFreebird = Config.Bind<bool>(
+            "Client Side",
+            "Mute Freebird",
+            false,
+            "Mutes Freebird enemies just keeping them fast");
         Alarm.ConfigStuff();
     }
     
@@ -193,27 +247,34 @@ public class RepoDice : BaseUnityPlugin
     
     internal static void MainRegisterNewEffect(IEffect effect,bool defaultOff = false, bool superDebug = false)
     {
-        ConfigEntry<bool> cfg;
-        if (defaultOff)
+        if (superDebug)
         {
-            cfg = BepInExConfig.Bind<bool>("Allowed Effects",
-                effect.Name,
-                false,
-                effect.Tooltip);
+            DieBehaviour.AllEffects.Add(effect);
         }
         else
         {
-            cfg = BepInExConfig.Bind<bool>("Allowed Effects",
-                effect.Name,
-                true,
-                effect.Tooltip);
-        }
+            ConfigEntry<bool> cfg;
+            if (defaultOff)
+            {
+                cfg = BepInExConfig.Bind<bool>("Allowed Effects",
+                    effect.Name,
+                    false,
+                    effect.Tooltip);
+            }
+            else
+            {
+                cfg = BepInExConfig.Bind<bool>("Allowed Effects",
+                    effect.Name,
+                    true,
+                    effect.Tooltip);
+            }
         
-        DieBehaviour.effectConfigs.Add(cfg);
-        //DieBehaviour.favConfigs.Add(fav);
-        if (cfg.Value)
-            DieBehaviour.AllowedEffects.Add(effect);
-       
+            DieBehaviour.effectConfigs.Add(cfg);
+            //DieBehaviour.favConfigs.Add(fav);
+            if (cfg.Value)
+                DieBehaviour.AllowedEffects.Add(effect);
+            DieBehaviour.AllEffects.Add(effect);
+        }
     }
 
     // private void Update()

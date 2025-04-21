@@ -12,7 +12,7 @@ public class SmolBigNuke : IEffect
     public string Name => "Smol Big Nuke";
     public EffectType Outcome => EffectType.Good;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "Big Boom Tiny Package";
+    public string Tooltip => "Large things come in small packages";
 
     public void Use(PlayerAvatar roller)
     {

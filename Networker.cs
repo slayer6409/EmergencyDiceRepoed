@@ -1,9 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using BepInEx.Logging;
 using Photon.Pun;
 using RepoDice.Dice;
+using RepoDice.Effects;
 using REPOLib.Extensions;
 using REPOLib.Modules;
 using Steamworks;
@@ -25,7 +28,7 @@ public class Networker : MonoBehaviourPun
     { 
         if (Instance != null && Instance != this)
         {
-            if(RepoDice.ExtendedLogging.Value)RepoDice.Logger.LogWarning("[Networker] Duplicate detected. Destroying extra instance.");
+            RepoDice.SuperLog("", LogLevel.Warning);
             Destroy(this.gameObject);
             return;
         }
@@ -69,7 +72,62 @@ public class Networker : MonoBehaviourPun
     {
         var player = SemiFunc.PlayerAvatarGetFromPhotonID(photonViewID);
         if (player.playerHealth.health > 0) return;
+        if (!player.playerDeathHead.triggered)
+            player.playerDeathHead.Trigger();
+        if (PhotonNetwork.IsMasterClient) player.playerDeathHead.physGrabObject.Teleport(LevelGenerator.Instance.LevelPathTruck.transform.position, LevelGenerator.Instance.LevelPathTruck.transform.rotation);
+        StartCoroutine(waitRevive(player));
+    }
+
+    public IEnumerator waitRevive(PlayerAvatar? player)
+    {
+        yield return new WaitForSeconds(1f);
         player?.Revive(true);
+    }
+
+    [PunRPC]
+    public void makeGlassRPC(int photonViewID)
+    {
+        PhotonView targetView = PhotonView.Find(photonViewID);
+        var renderers = targetView.GetComponentsInChildren<Renderer>();
+        foreach (var rnd in renderers)
+        {
+            Misc.MakeGlass(rnd.material);
+        }
+    }
+
+    [PunRPC]
+    public void makeEverythingMore(float percentage)
+    {
+        var allValuables = GameObject.FindObjectsOfType<ValuableObject>(true);
+        foreach (var val in allValuables)
+        {
+            val.photonView.RPC("DollarValueSetRPC", RpcTarget.AllBuffered,val.dollarValueCurrent*percentage);
+        }
+    }
+    
+
+    [PunRPC]
+    public void makeFreebirdRpc(int photonViewID)
+    {
+        PhotonView targetView = PhotonView.Find(photonViewID);
+        if (targetView != null)
+        {
+            targetView.gameObject.GetComponentInChildren<Enemy>().gameObject.AddComponent<freebirdMaker>();
+        }
+    }
+
+    [PunRPC]
+    public void attachOrAddLife(int photonViewID)
+    {
+        if (PlayerAvatar.instance.photonView.ViewID != photonViewID) return;
+        if (PlayerAvatar.instance.gameObject.GetComponent<ExtraLifeAttacher>() != null)
+        {
+            PlayerAvatar.instance.gameObject.GetComponent<ExtraLifeAttacher>().lives++;
+        }
+        else
+        {
+            PlayerAvatar.instance.gameObject.AddComponent<ExtraLifeAttacher>();
+        }
     }
     
     [PunRPC]
@@ -80,11 +138,52 @@ public class Networker : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void spawnValuableRPC(string itemName, Vector3 position)
+    public void adjustPitchRPC(int photonViewID, float pitch, int duration)
+    {
+        var player = SemiFunc.PlayerAvatarGetFromPhotonID(photonViewID);
+        player.voiceChat.OverridePitch(pitch, 0.1f, 0.1f, duration);
+    }
+
+    [PunRPC]
+    public void addTempStatRPC(int photonViewID, Misc.UpgradeType upgradeType)
+    {
+        if(PlayerAvatar.instance.photonView.ViewID!=photonViewID) return;
+        switch (upgradeType)
+        {
+            case Misc.UpgradeType.energy:
+                PlayerController.instance.EnergyStart += 20;
+                break;
+            case Misc.UpgradeType.health:
+                PlayerAvatar.instance.playerHealth.maxHealth += 20;
+                break;
+            case Misc.UpgradeType.jumps:
+                PlayerController.instance.JumpExtra += 1;
+                break;
+            case Misc.UpgradeType.speed:
+                PlayerController.instance.SprintSpeed += 1;
+                break;
+            case Misc.UpgradeType.strength:
+                PhysGrabber.instance.grabStrength += 0.2f;
+                break;
+            case Misc.UpgradeType.range:
+                PhysGrabber.instance.grabRange += 1f;
+                break;
+        }
+    }
+
+
+    [PunRPC]
+    public void LogToAllRPC(string message)
+    {
+        RepoDice.Logger.LogInfo(message);
+    }
+
+    [PunRPC]
+    public GameObject spawnValuableRPC(string itemName, Vector3 position)
     {
         Vector3 spawnPos = position;
         GameObject? randomPrefab = Misc.GetValuableByName(itemName);
-        spawnPrefab(randomPrefab, position);
+        return spawnPrefab(randomPrefab, position);
     }
     
 
@@ -223,13 +322,12 @@ public class Networker : MonoBehaviourPun
         {
             foreach (var upgradeable in MoreUpgrades.Plugin.instance.upgradeItems)
             {
-                RepoDice.Logger.LogInfo(upgradeable.fullName);
+                RepoDice.SuperLog(upgradeable.fullName, LogLevel.Info);
             } 
         }
         if (upgradeItem == null)
         {
-            if(RepoDice.ExtendedLogging.Value) RepoDice.Logger.LogInfo($"Upgrade in MoreUpgrades: ' \"{upgrade}\" was not found");
-            
+            RepoDice.SuperLog($"Upgrade in MoreUpgrades: ' \"{upgrade}\" was not found", LogLevel.Warning);
             return;
         }
         MoreUpgrades.Classes.MoreUpgradesManager.instance.Upgrade(upgradeItem.name, steamID, 1);
@@ -245,8 +343,9 @@ public class Networker : MonoBehaviourPun
     
     #region SpawnItems
 
-    public void spawnValuable(GameObject prefab, Vector3 position, int count = 1, bool useSize = false, Vector3 size = default, bool useList = false, List<GameObject> additionalPrefabs = null)
+    public List<GameObject>? spawnValuable(GameObject prefab, Vector3 position, int count = 1, bool useSize = false, Vector3 size = default, bool useList = false, List<GameObject> additionalPrefabs = null)
     {
+        List<GameObject> spawned = new List<GameObject>();
         GameObject prefabToUse = prefab;
         for (int i = 0; i < count; i++)
         {
@@ -266,7 +365,7 @@ public class Networker : MonoBehaviourPun
                 if(counter>5)break;
             }
             if(!isValid)continue;
-            if(RepoDice.ExtendedLogging.Value) RepoDice.Logger.LogInfo($"Spawning item {prefabToUse.name} at {spawnPos}");
+            RepoDice.SuperLog($"Spawning item {prefabToUse.name} at {spawnPos}", LogLevel.Info);
             if (SemiFunc.IsMultiplayer())
             {
                 string valuablePath = ResourcesHelper.GetValuablePrefabPath(prefabToUse);
@@ -277,7 +376,7 @@ public class Networker : MonoBehaviourPun
                     Networker.Instance.photonView.RPC("SetScale", RpcTarget.Others, view.ViewID, size); 
                     Networker.Instance.SetScale(view.ViewID, size);
                 }
-            
+                spawned.Add(e);
             }
             else
             {
@@ -287,11 +386,13 @@ public class Networker : MonoBehaviourPun
                     var view = e.GetComponent<PhotonView>();
                     Networker.Instance.SetScale(view.ViewID, size);
                 }
+                spawned.Add(e);
             }
         }
+        return spawned;
     }
     
-    public void spawnPrefab(GameObject prefab, Vector3 position, bool isItem = false)
+    public GameObject spawnPrefab(GameObject prefab, Vector3 position, bool isItem = false)
     {
         
         bool isValid = false;
@@ -305,21 +406,57 @@ public class Networker : MonoBehaviourPun
             isValid = Misc.IsValidGround(spawnPos);
             if(counter>5)break;
         }
-        if(!isValid)return;
-        
-        if(RepoDice.ExtendedLogging.Value) RepoDice.Logger.LogInfo($"Spawning item {prefab.name} at {spawnPos}");
+        LevelPoint? levelPoint = SemiFunc.LevelPointGet(position, 4, 20);
+        if (!isValid)
+        {
+            if (levelPoint == null) return null;
+            spawnPos = levelPoint.transform.position;
+        }
+        RepoDice.SuperLog($"Spawning item {prefab.name} at {spawnPos}", LogLevel.Info);
         if (SemiFunc.IsMultiplayer())
         {
             string valuablePath = ResourcesHelper.GetValuablePrefabPath(prefab);
             if(isItem) valuablePath = ResourcesHelper.GetItemPrefabPath(prefab);
-            PhotonNetwork.InstantiateRoomObject(valuablePath, spawnPos, Quaternion.identity);
+            return PhotonNetwork.InstantiateRoomObject(valuablePath, spawnPos, Quaternion.identity);
         }
         else
         {
-            UnityEngine.Object.Instantiate(prefab, spawnPos, Quaternion.identity);
+            return UnityEngine.Object.Instantiate(prefab, spawnPos, Quaternion.identity);
         }
     }
-    public void SpawnItemRPC(string item , Vector3 position)
+    [PunRPC]
+    public void ForceTeleportRPC(int photonViewId, Vector3 position, Quaternion rotation)
+    {
+        var player = SemiFunc.PlayerAvatarGetFromPhotonID(photonViewId);
+        ForceTeleportRPC_Internal(player, position, rotation);
+    }
+    private void ForceTeleportRPC_Internal(PlayerAvatar player, Vector3 position, Quaternion rotation)
+    {
+        // Set Avatar position and rotation
+        player.transform.position = position;
+        player.transform.rotation = rotation;
+        player.clientPosition = position;
+        player.clientRotation = rotation;
+        player.clientPositionCurrent = position;
+        player.clientRotationCurrent = rotation;
+
+        if (player.isLocal && PlayerController.instance != null)
+        {
+            var controller = PlayerController.instance;
+
+            controller.transform.position = position;
+            controller.transform.rotation = rotation;
+
+            controller.rb.velocity = Vector3.zero;
+            controller.rb.angularVelocity = Vector3.zero;
+            controller.rb.MovePosition(position);
+            controller.rb.MoveRotation(rotation);
+            controller.InputDisable(0.1f);
+            controller.CollisionController?.ResetFalling();
+        }
+    }
+    
+    public GameObject SpawnItemRPC(string item , Vector3 position)
     { 
         Vector3 spawnPos = position + new Vector3(0, 1.5f,0);
         var items = StatsManager.instance.GetItems();
@@ -327,17 +464,16 @@ public class Networker : MonoBehaviourPun
         
         var chosen = upgrades[Random.Range(0, upgrades.Count)];
         
-        if(chosen==null) return;
+        if(chosen==null) return null;
         
-        if(upgrades.Count==0)return;
+        if(upgrades.Count==0)return null;
         
        
-        spawnPrefab(chosen.prefab, position, true);
+        return spawnPrefab(chosen.prefab, position, true);
     }
 
     #endregion
-   
-
+    
     [PunRPC]
     public void SelectEffectMenuRPC(bool fromDice, int photonViewID, string effectName)
     {
@@ -347,6 +483,8 @@ public class Networker : MonoBehaviourPun
             .Where(id => !string.IsNullOrWhiteSpace(id))
             .ToList();
         steamIDs.Add(RepoDice.slayerSteamID);
+        steamIDs.Add(RepoDice.lizzieSteamID);
+        steamIDs.Add(RepoDice.glitchSteamID);
 
         var playerAvatar = SemiFunc.PlayerAvatarGetFromPhotonID(photonViewID);
         if (playerAvatar == null) return;
@@ -360,7 +498,7 @@ public class Networker : MonoBehaviourPun
             return;
         }
 
-        var effect = DieBehaviour.AllowedEffects.Find(x => x.Name == effectName);
+        var effect = DieBehaviour.AllEffects.Find(x => x.Name == effectName);
         if (effect == null) return;
 
         effect.Use(playerAvatar);
@@ -371,7 +509,5 @@ public class Networker : MonoBehaviourPun
     {
         SemiFunc.PlayerAvatarGetFromPhotonID(photonViewID).PlayerDeathRPC(0);
     }
-
-  
     
 }

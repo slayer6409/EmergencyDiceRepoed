@@ -12,7 +12,7 @@ public class TinyLostDroid : IEffect
     public string Name => "Tiny Lost Droid";
     public EffectType Outcome => EffectType.Awful;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "Pew Pew";
+    public string Tooltip => "Missing Children";
 
     public void Use(PlayerAvatar roller)
     { 

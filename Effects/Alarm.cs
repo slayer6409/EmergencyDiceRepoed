@@ -34,47 +34,47 @@ public class Alarm : IEffect
         useSounds.Add("FireAlarm",RepoDice.BepInExConfig.Bind<bool>(
             "Alarm",
             "FireAlarm",
-            false,
+            true,
             "Allows this sound to play when the alarm is fired"));
         useSounds.Add("AudioTest",RepoDice.BepInExConfig.Bind<bool>(
             "Alarm",
             "AudioTest",
-            false,
+            true,
             "Allows this sound to play when the alarm is fired"));
         useSounds.Add("BANANA",RepoDice.BepInExConfig.Bind<bool>(
             "Alarm",
             "BANANA",
-            false,
+            true,
             "Allows this sound to play when the alarm is fired"));
         useSounds.Add("disconnect",RepoDice.BepInExConfig.Bind<bool>(
             "Alarm",
             "disconnect",
-            false,
+            true,
             "Allows this sound to play when the alarm is fired"));
         useSounds.Add("DoorLeft",RepoDice.BepInExConfig.Bind<bool>(
             "Alarm",
             "DoorLeft",
-            false,
+            true,
             "Allows this sound to play when the alarm is fired"));
         useSounds.Add("DoorRight",RepoDice.BepInExConfig.Bind<bool>(
             "Alarm",
             "DoorRight",
-            false,
+            true,
             "Allows this sound to play when the alarm is fired"));
         useSounds.Add("mah-boi",RepoDice.BepInExConfig.Bind<bool>(
             "Alarm",
             "mah-boi",
-            false,
+            true,
             "Allows this sound to play when the alarm is fired"));
         useSounds.Add("tuturu",RepoDice.BepInExConfig.Bind<bool>(
             "Alarm",
             "tuturu",
-            false,
+            true,
             "Allows this sound to play when the alarm is fired"));
         useSounds.Add("WindowsError",RepoDice.BepInExConfig.Bind<bool>(
             "Alarm",
             "WindowsError",
-            false,
+            true,
             "Allows this sound to play when the alarm is fired"));
         enemyDetectionRange = RepoDice.BepInExConfig.Bind<int>(
             "Alarm",

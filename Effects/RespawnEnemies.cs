@@ -7,16 +7,18 @@ using UnityEngine;
 
 namespace RepoDice.Effects;
 
-public class Robe : IEffect
+public class RespawnEnemies : IEffect
 {
-    public string Name => "Robe";
+    public string Name => "Respawn Enemies";
     public EffectType Outcome => EffectType.Awful;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "Fresh out of the shower";
+    public string Tooltip => "Welcome Back Everyone!";
 
     public void Use(PlayerAvatar roller)
     {
-        Vector3 spawnPos = roller.transform.position + roller.transform.forward;
-        Misc.SpawnEnemy("Robe", 1, spawnPos);
+        foreach (var enemy in EnemyDirector.instance.enemiesSpawned)
+        {
+            enemy.DespawnedTimerSet(0);
+        }
     }
 }

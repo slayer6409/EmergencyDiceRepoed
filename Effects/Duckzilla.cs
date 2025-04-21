@@ -12,7 +12,7 @@ public class Duckzilla : IEffect
     public string Name => "Duckzilla";
     public EffectType Outcome => EffectType.Awful;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "BIG JEFFERY";
+    public string Tooltip => "JEFFERY DRANK MILK";
 
     public void Use(PlayerAvatar roller)
     { 

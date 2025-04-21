@@ -11,7 +11,7 @@ public class RandUpgrade : IEffect
     public string Name => "Random Upgrade";
     public EffectType Outcome => EffectType.Good;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "Spawns a random Upgrade!";
+    public string Tooltip => "Useful box";
 
     public void Use(PlayerAvatar roller)
     {

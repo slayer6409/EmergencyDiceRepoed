@@ -11,7 +11,7 @@ public class BigPlate : IEffect
     public string Name => "Big Uranium";
     public EffectType Outcome => EffectType.Mixed;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "It big";
+    public string Tooltip => "It big but breakable";
 
     public void Use(PlayerAvatar roller)
     {

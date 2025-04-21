@@ -12,7 +12,7 @@ public class TinyJeffery : IEffect
     public string Name => "Tiny Jeffery";
     public EffectType Outcome => EffectType.Awful;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "TINY JEFFERY";
+    public string Tooltip => "Adorable";
 
     public void Use(PlayerAvatar roller)
     { 

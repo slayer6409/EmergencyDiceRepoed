@@ -12,7 +12,7 @@ public class SelectEffect : IEffect
     public string Name => "Select an Effect";
     public EffectType Outcome => EffectType.Great;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "Choose!";
+    public string Tooltip => "I can choose if someone dies";
 
     public void Use(PlayerAvatar roller)
     {

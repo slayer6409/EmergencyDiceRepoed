@@ -12,7 +12,7 @@ public class MiniRobe : IEffect
     public string Name => "Mini Robe";
     public EffectType Outcome => EffectType.Awful;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "He Smol";
+    public string Tooltip => "He Smol and Scary";
 
     public void Use(PlayerAvatar roller)
     { 

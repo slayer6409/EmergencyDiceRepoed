@@ -12,7 +12,7 @@ public class RandItem : IEffect
     public string Name => "Random Item";
     public EffectType Outcome => EffectType.Good;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "Spawns a random Item!";
+    public string Tooltip => "It's dangerous to go alone, take this!";
 
     public void Use(PlayerAvatar roller)
     {

@@ -7,16 +7,16 @@ using UnityEngine;
 
 namespace RepoDice.Effects;
 
-public class Robe : IEffect
+public class BigBang : IEffect
 {
-    public string Name => "Robe";
-    public EffectType Outcome => EffectType.Awful;
+    public string Name => "BigBang";
+    public EffectType Outcome => EffectType.Bad;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "Fresh out of the shower";
+    public string Tooltip => "It all started with a Big Bang";
 
     public void Use(PlayerAvatar roller)
-    {
+    { 
         Vector3 spawnPos = roller.transform.position + roller.transform.forward;
-        Misc.SpawnEnemy("Robe", 1, spawnPos);
+        Misc.SpawnAndScaleEnemy("Banger", 1, spawnPos, new Vector3(3,3,3));
     }
 }

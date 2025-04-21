@@ -12,7 +12,9 @@ namespace RepoDice.Dice;
 
 public abstract class DieBehaviour : Trap
 {
+    public bool fromRainbow = false;
     public static List<IEffect> AllowedEffects = new List<IEffect>();
+    public static List<IEffect> AllEffects = new List<IEffect>();
     public Dictionary<int, EffectType[]> RollToEffect = new Dictionary<int, EffectType[]>();
     public bool isRolling = false;
     protected GameObject DiceModel;
@@ -53,6 +55,12 @@ public abstract class DieBehaviour : Trap
         SetupRollToEffectMapping();
     }
 
+    public IEnumerator delayedRoll()
+    {
+        yield return new WaitForSeconds(0.5f);
+        isRolling = true;
+        BlockPickupAndRollRPC();
+    }
     
     public void FixedUpdate()
     { 
@@ -63,9 +71,10 @@ public abstract class DieBehaviour : Trap
             lastHolder = physGrabObject.playerGrabbing[0].playerAvatar;
             return;
         }
+        
         if(physGrabObject.grabbed)return;
         
-        if (rb.velocity.magnitude > 8)
+        if (rb.velocity.magnitude > RepoDice.throwSpeed.Value)
         {
             isRolling = true;
             if (SemiFunc.IsMasterClientOrSingleplayer()) BlockPickupAndRollRPC();
@@ -74,6 +83,14 @@ public abstract class DieBehaviour : Trap
     
     public void BlockPickupAndRollRPC()
     {
+        if (SemiFunc.IsMultiplayer())
+        {
+            setStuff();
+        }
+        else
+        {
+            photonView.RPC("setStuff",RpcTarget.All);
+        }
         if (lastHolder == null) lastHolder = Misc.GetRandomAlivePlayer();
         if (lastHolder != null)
         {
@@ -82,6 +99,25 @@ public abstract class DieBehaviour : Trap
         else
         {
             RepoDice.Logger.LogWarning("Tried to roll but no player found.");
+        }
+    }
+
+    [PunRPC]
+    public void setStuff()
+    {
+        physGrabObject.grabDisableTimer = 4f;
+        StartCoroutine(doSillyShit());
+    }
+
+    public IEnumerator doSillyShit()
+    {
+        while(isRolling)
+        {
+            foreach (var player in physGrabObject.playerGrabbing)
+            {
+                player.ReleaseObject();
+            }
+            yield return null;
         }
     }
     
@@ -101,10 +137,17 @@ public abstract class DieBehaviour : Trap
             timer += Time.deltaTime;
             yield return null;
         }
-        
-        Roll();
+        try
+        {
+            Roll();
+        }
+        catch(Exception e)
+        {
+            RepoDice.Logger.LogError(e.Message);
+            isRolling = false;
+        }
         yield return new WaitForSeconds(0.5f);
-        PhotonNetwork.Destroy(this.gameObject);
+        if(isRolling) PhotonNetwork.Destroy(this.gameObject);
     }
     
     
@@ -153,11 +196,14 @@ public abstract class DieBehaviour : Trap
     }
     public virtual void Roll()
     {
-        Debug.Log("Roll");
         int diceRoll = UnityEngine.Random.Range(1, 7);
         IEffect randomEffect = GetRandomEffect(diceRoll, Effects);
         if (randomEffect == null) return;
-        RepoDice.Logger.LogInfo($"Rolling {randomEffect.Name}");
+        Networker.Instance.photonView.RPC("LogToAllRPC", RpcTarget.Others,$"Rolling {randomEffect.Name}");
+        Networker.Instance.LogToAllRPC($"Rolling {randomEffect.Name}");
+        string messageToSay = $"Rolling {randomEffect.Name}";
+        if(!RepoDice.SpoilerMode.Value) messageToSay = randomEffect.Tooltip;
+        lastHolder.photonView.RPC("ChatMessageSendRPC", RpcTarget.All, messageToSay, false);
         
         randomEffect.Use(lastHolder);
         explodeMachoAndGlitch(1);
@@ -178,7 +224,7 @@ public abstract class DieBehaviour : Trap
             _ => "Good2"
         };
     }
-    public IEffect? GetRandomEffect(int diceRoll, List<IEffect> effects)
+    public virtual IEffect? GetRandomEffect(int diceRoll, List<IEffect> effects)
     {
         List<IEffect> rolledEffects = new List<IEffect>();
         if(effects.Count == 0) effects = new List<IEffect>(Effects);
@@ -193,29 +239,50 @@ public abstract class DieBehaviour : Trap
     
     public static void Config()
     {
-        RepoDice.MainRegisterNewEffect(new RandVal());
-        RepoDice.MainRegisterNewEffect(new Gnomes());
-        RepoDice.MainRegisterNewEffect(new Robe());
-        RepoDice.MainRegisterNewEffect(new LittleShits());
-        RepoDice.MainRegisterNewEffect(new ScrapJackpot());
-        RepoDice.MainRegisterNewEffect(new Duckzilla());
-        RepoDice.MainRegisterNewEffect(new UGF());
-        RepoDice.MainRegisterNewEffect(new ReviveAll());
+        RepoDice.MainRegisterNewEffect(new Alarm());
         RepoDice.MainRegisterNewEffect(new BEEGGNOME());
+        RepoDice.MainRegisterNewEffect(new BigBang());
         RepoDice.MainRegisterNewEffect(new BigPlate());
         RepoDice.MainRegisterNewEffect(new BigTiny());
-        RepoDice.MainRegisterNewEffect(new TinyBig());
+        RepoDice.MainRegisterNewEffect(new Duckzilla());
         RepoDice.MainRegisterNewEffect(new ExplodeRandom());
-        RepoDice.MainRegisterNewEffect(new InfiniteStamina());
         RepoDice.MainRegisterNewEffect(new ExtraStaminaForAll());
+        RepoDice.MainRegisterNewEffect(new Gnomes());
+        RepoDice.MainRegisterNewEffect(new Hidden());
+        RepoDice.MainRegisterNewEffect(new InfiniteStamina());
+        RepoDice.MainRegisterNewEffect(new LittleShits());
+        RepoDice.MainRegisterNewEffect(new MiniRobe());
+        RepoDice.MainRegisterNewEffect(new PitchDown());
+        RepoDice.MainRegisterNewEffect(new PitchRandom());
+        RepoDice.MainRegisterNewEffect(new PitchUp());
+        RepoDice.MainRegisterNewEffect(new RandItem());
+        RepoDice.MainRegisterNewEffect(new RandomStat());
         RepoDice.MainRegisterNewEffect(new RandUpgrade());
         RepoDice.MainRegisterNewEffect(new RandUpgradeMulti());
-        RepoDice.MainRegisterNewEffect(new MiniRobe());
-        RepoDice.MainRegisterNewEffect(new TinyJeffery());
-        RepoDice.MainRegisterNewEffect(new RandItem());
-        RepoDice.MainRegisterNewEffect(new Reroll());
+        RepoDice.MainRegisterNewEffect(new RandVal());
+        RepoDice.MainRegisterNewEffect(new Robe());
+        RepoDice.MainRegisterNewEffect(new ReviveAll());
         RepoDice.MainRegisterNewEffect(new SelectEffect());
-        RepoDice.MainRegisterNewEffect(new Alarm());
+        RepoDice.MainRegisterNewEffect(new ScrapJackpot());
+        RepoDice.MainRegisterNewEffect(new TinyBig());
+        RepoDice.MainRegisterNewEffect(new TinyJeffery());
+        RepoDice.MainRegisterNewEffect(new Reroll());
+        RepoDice.MainRegisterNewEffect(new UGF());
+        RepoDice.MainRegisterNewEffect(new ExtraLife());
+        RepoDice.MainRegisterNewEffect(new ExtraLives());
+        RepoDice.MainRegisterNewEffect(new AttractAll());
+        RepoDice.MainRegisterNewEffect(new RespawnEnemies());
+        RepoDice.MainRegisterNewEffect(new ReturnToShip());
+        RepoDice.MainRegisterNewEffect(new FreebirdEnemy(), true);
+        RepoDice.MainRegisterNewEffect(new HingeBreaker());
+        RepoDice.MainRegisterNewEffect(new SemiTransparentDoors());
+        RepoDice.MainRegisterNewEffect(new BigFan());
+        RepoDice.MainRegisterNewEffect(new DecreasedValue());
+        RepoDice.MainRegisterNewEffect(new IncreasedValue());
+        
+        
+        RepoDice.MainRegisterNewEffect(new InstantReroll(), superDebug:true);
+        
         
         
         
