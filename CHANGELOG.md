@@ -1,10 +1,24 @@
+- **1.0.6**
+    - Fixed some issues
+    - Added new Event
+    - Sorry Glitch :D
+  
+- **1.0.5**
+    - Added a new die (this one is a shop item)
+    - Added the ability to hit E to roll the die in case you didn't want to throw it 
+      - It will fly in a random direction and can possibly hit you >:D 
+      - If you want it only to be with hitting E, change the throw speed to a very high number
+    - New effect specifically for the die
+    - Things are a bit "Glitchy" :D
+    - SAUGER MY BOY
+  
 - **1.0.4**
     - Made sacrificer teleport first then spawn things
-    - Possibly fixed revives spawning out of bounds by teleporting the head to the truck first
+    - Possibly fixed revives spawning out of bounds by teleporting ****the head to the truck first
     - A few new events
     - Sorry not sorry >:D
     - There is a disabled effect by default just in case since some people wouldn't like it, but check it out if you dare xD
-      - it might be kind of wonky sometimes with modded enemies or gnomes 
+    - it might be kind of wonky sometimes with modded enemies or gnomes 
   
 - **1.0.3**
     - Added a bunch of new events

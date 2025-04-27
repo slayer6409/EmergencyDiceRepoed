@@ -17,9 +17,12 @@ public class HingeBreaker : IEffect
     public void Use(PlayerAvatar roller)
     {
         PhysGrabHinge[] allHinges = GameObject.FindObjectsOfType<PhysGrabHinge>();
+        //string[] targets = { "DOOR", "LOCKER", "CABINET", "SNOW VEHICLE", "FRIDGE"};
         foreach (var hinge in allHinges)
         {
-            if(!hinge.transform.parent.gameObject.name.ToUpper().Contains("DOOR"))continue;
+            //string name = hinge.transform.parent.gameObject.name.ToUpper();
+            //bool containsTarget = targets.Any(tar => name.Contains(tar));
+            //if(!containsTarget)continue;
             if (!hinge.dead && !hinge.broken)
             {
                 hinge.HingeBreakRPC(); // Locally apply all effects

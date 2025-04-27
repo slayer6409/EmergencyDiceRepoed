@@ -1,5 +1,6 @@
 using HarmonyLib;
 using Photon.Pun;
+using RepoDice.Visual;
 using REPOLib.Modules;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -13,6 +14,8 @@ public class GameplayManagerPatch
     [HarmonyPostfix]
     public static void StartPatch()
     {
+        RepoDice.JumpscareOBJ = GameObject.Instantiate(RepoDice.JumpscareCanvasPrefab);
+        RepoDice.JumpscareScript = RepoDice.JumpscareOBJ.GetComponent<Jumpscare>();
         if(Networker.Instance != null) return;
         if (SemiFunc.IsMultiplayer())
         {

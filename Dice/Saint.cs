@@ -24,6 +24,7 @@ public class Saint : DieBehaviour
     public override IEffect? GetRandomEffect(int diceRoll, List<IEffect> effects)
     {
         if (diceRoll == 0) return null;
+        if (RepoDice.removeSaint.Value) diceRoll = 5;
         if (diceRoll == 6) return new SelectEffect();
         return base.GetRandomEffect(diceRoll, effects);
         

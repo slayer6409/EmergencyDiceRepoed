@@ -40,6 +40,9 @@
           <ExcludePluginOutput>true</ExcludePluginOutput>
       </Reference>
     </ItemGroup>
+    <ItemGroup>
+      <None Remove=".gitignore" />
+    </ItemGroup>
     <Target Name="PostBuildZip" AfterTargets="CopyFilesToPluginOutputDirectory">
         <Exec Command="cd C:\Users\andre\Desktop\MysteryDice &amp; call &quot;Make Zip9.bat&quot;" />
     </Target>

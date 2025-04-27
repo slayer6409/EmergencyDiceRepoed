@@ -6,20 +6,19 @@ using UnityEngine;
 
 namespace RepoDice.Effects;
 
-public class BigTiny : IEffect
+public class TinyCandy : IEffect
 {
-    public string Name => "Big Tiny";
-    public EffectType Outcome => EffectType.Bad;
+    public string Name => "Tiny Candy";
+    public EffectType Outcome => EffectType.Mixed;
     public bool ShowDefaultTooltip => true;
-    public string Tooltip => "It tiny but big";
+    public string Tooltip => "Annoying AF";
 
     public void Use(PlayerAvatar roller)
     {
-        var tiny = Misc.GetValuablesBySize(Misc.Size.tiny);
-        tiny.AddRange(Misc.GetValuablesBySize(Misc.Size.small));
+        var tiny = Misc.getValuablesWithName("candy");
         GameObject randomPrefab = tiny[Random.Range(0, tiny.Count)];
         Vector3 spawnPos = (roller.transform.position + roller.transform.forward);
-        var scale = new Vector3(4f, 4f, 4f);
+        var scale = new Vector3(0.25f, 0.25f, 0.25f);
         Networker.Instance.spawnValuable(randomPrefab, spawnPos, 4, true, scale, true, tiny);
     }
 }

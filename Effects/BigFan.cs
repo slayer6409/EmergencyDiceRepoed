@@ -21,7 +21,7 @@ public class BigFan : IEffect
         var fans = Networker.Instance.spawnValuable(randomPrefab, spawnPos, 1, true, new Vector3(3f, 3f, 3f));
         foreach (var fan in fans)
         {
-            Networker.Instance.photonView.RPC("makeGlassRPC",RpcTarget.All,fan.GetComponent<PhotonView>().ViewID);
+            Networker.Instance.photonView.RPC("makeGlassRPC",RpcTarget.All,fan.GetComponent<PhotonView>().ViewID, true, false);
         }
     }
 }

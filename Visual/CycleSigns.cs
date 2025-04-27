@@ -27,20 +27,23 @@ public class CycleSigns : MonoBehaviour
 
     private SpriteRenderer SignSpriteRenderer;
     private SpriteRenderer SignSpriteRenderer2;
+    private SpriteRenderer SignSpriteRenderer3;
     private Renderer DiceRenderer;
 
     List<DiceVisuals> Visuals = new List<DiceVisuals>();
     void Start()
     {
-        Visuals.Add(new DiceVisuals(RepoDice.RepoDice.WarningExclamation, Color.yellow, Color.yellow,100f));
-        Visuals.Add(new DiceVisuals(RepoDice.RepoDice.WarningExclamation, Color.yellow, Color.yellow,100f));
+        Visuals.Add(new DiceVisuals(RepoDice.RepoDice.WarningExclamation, Color.yellow, Color.yellow,40f));
+        //Visuals.Add(new DiceVisuals(RepoDice.RepoDice.WarningExclamation, Color.yellow, Color.yellow,100f));
         Visuals.Add(new DiceVisuals(RepoDice.RepoDice.WarningDeath, Color.red, Color.red,100f));
         Visuals.Add(new DiceVisuals(RepoDice.RepoDice.WarningLuck, Color.green, Color.green,300f));
+        if(RepoDice.Misc.isGlitchOrConfig()) Visuals.Add(new DiceVisuals(RepoDice.RepoDice.WarningGlitch, Color.magenta, Color.magenta,300f));
 
         SignSpriteRenderer = transform.Find("Emergency Sign").gameObject.GetComponent<SpriteRenderer>();
         SignSpriteRenderer2 = transform.Find("Emergency Sign2").gameObject.GetComponent<SpriteRenderer>();
         DiceRenderer = gameObject.GetComponent<Renderer>();
     }
+    
     
     void Update()
     {

@@ -10,6 +10,7 @@ using HarmonyLib;
 using Photon.Pun;
 using RepoDice.Dice;
 using RepoDice.Effects;
+using RepoDice.Visual;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,7 +18,7 @@ namespace RepoDice;
 
 //Yes I know my coding is a bit weird 
 
-[BepInPlugin("Slayer6409.EmergencyDiceREPO", "Emergency Dice REPO", "1.0.4")]
+[BepInPlugin("Slayer6409.EmergencyDiceREPO", "Emergency Dice REPO", "1.0.6")]
 [BepInDependency(REPOLib.MyPluginInfo.PLUGIN_GUID)]
 [BepInDependency("bulletbot.moreupgrades", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("WesleysEnemies", BepInDependency.DependencyFlags.SoftDependency)]
@@ -35,9 +36,13 @@ public class RepoDice : BaseUnityPlugin
     public static ConfigEntry<float> throwSpeed;
     public static ConfigEntry<bool> DebugMenuClosesAfter;
     public static ConfigEntry<bool> Bald;
+    public static ConfigEntry<bool> IWannaSeeWhatGlitchSees;
     public static ConfigEntry<bool> SpoilerMode;
     public static ConfigEntry<bool> Copyright;
     public static ConfigEntry<bool> muteFreebird;
+    public static ConfigEntry<bool> removeSaint;
+    public static ConfigEntry<bool> glitchedRespawn;
+    public static ConfigEntry<bool> glitchyMode;
     public static ConfigEntry<float> Volume;
     private InputAction debugMenuAction;
     private InputAction debugMenuAction2;
@@ -55,10 +60,16 @@ public class RepoDice : BaseUnityPlugin
         glitchSteamID = "76561198984467725",
         lizzieSteamID = "76561199094139351";
     internal Harmony? Harmony { get; set; }
-    public static Sprite WarningExclamation, WarningDeath, WarningLuck;
+    public static Sprite WarningExclamation, WarningDeath, WarningLuck, WarningGlitch;
     public static GameObject Gambler, Saint, Sacrificer, RainbowDice;
+    public static Item GlitchedDice;
+    public static Material GlitchyMaterial, savedMaterial;
+
+    public static GameObject JumpscareCanvasPrefab,
+        JumpscareOBJ;
 
     public static List<string> RegisteredDiceNames = new List<string>();
+    public static Jumpscare JumpscareScript;
     
     private void Awake()
     {
@@ -84,6 +95,9 @@ public class RepoDice : BaseUnityPlugin
         sounds.Add("mah-boi", LoadedAssets.LoadAsset<AudioClip>("mah-boi"));
         sounds.Add("tuturu", LoadedAssets.LoadAsset<AudioClip>("tuturu"));
         sounds.Add("WindowsError", LoadedAssets.LoadAsset<AudioClip>("WindowsError"));
+        sounds.Add("Bald", LoadedAssets.LoadAsset<AudioClip>("Glitchimnotbald"));
+        sounds.Add("Bald2", LoadedAssets.LoadAsset<AudioClip>("GlitchGodfuckingdammit"));
+        sounds.Add("purr", LoadedAssets.LoadAsset<AudioClip>("purr"));
 
         if (Chainloader.PluginInfos.ContainsKey("bulletbot.moreupgrades")) {MoreUpgradesPresent = true; Logger.LogInfo($"More upgrades compatibility enabled!");}
         if (Chainloader.PluginInfos.ContainsKey("WesleysEnemies")) {WesleysEnemiesPresent = true; Logger.LogInfo($"Wesley's Enemies compatibility enabled!");}
@@ -97,6 +111,10 @@ public class RepoDice : BaseUnityPlugin
         WarningExclamation = LoadedAssets.LoadAsset<Sprite>("Warning");
         WarningDeath = LoadedAssets.LoadAsset<Sprite>("death");
         WarningLuck = LoadedAssets.LoadAsset<Sprite>("luck");
+        WarningGlitch = LoadedAssets.LoadAsset<Sprite>("glitch");
+        GlitchyMaterial = LoadedAssets.LoadAsset<Material>("GlitchedDie");
+        JumpscareCanvasPrefab = LoadedAssets.LoadAsset<GameObject>("JumpscareCanvas");
+        JumpscareCanvasPrefab.AddComponent<Jumpscare>();
 
         #region Dice
 
@@ -112,10 +130,16 @@ public class RepoDice : BaseUnityPlugin
         RegisteredDiceNames.Add("Sacrificer");
         Sacrificer.AddComponent<Sacrificer>();
         REPOLib.Modules.Valuables.RegisterValuable(Sacrificer);
+        
         RainbowDice = LoadedAssets.LoadAsset<GameObject>("RainbowDice");
         RegisteredDiceNames.Add("RainbowDice");
         RainbowDice.AddComponent<Rainbow>();
         REPOLib.Modules.Valuables.RegisterValuable(RainbowDice);
+        
+        GlitchedDice = LoadedAssets.LoadAsset<Item>("GlitchedDie");
+        RegisteredDiceNames.Add("GlitchedDie_ItemDie");
+        GlitchedDice.prefab.AddComponent<GlitchedDie>();
+        REPOLib.Modules.Items.RegisterItem(GlitchedDice);
 
 
         
@@ -176,6 +200,11 @@ public class RepoDice : BaseUnityPlugin
             "Bald",
             false,
             "Bald Man");
+        IWannaSeeWhatGlitchSees = Config.Bind<bool>(
+            "Client Side",
+            "I Wanna See What Glitch Sees",
+            false,
+            "Shows you what Glitch Sees");
         ExtendedLogging = Config.Bind<bool>(
             "Debug",
             "Extended Logging",
@@ -221,6 +250,21 @@ public class RepoDice : BaseUnityPlugin
             "Mute Freebird",
             false,
             "Mutes Freebird enemies just keeping them fast");
+        removeSaint = Config.Bind<bool>(
+            "Dice",
+            "Saint Roll",
+            false,
+            "Removes the Select Effect from Saint, making it just a great roll");
+        glitchedRespawn = Config.Bind<bool>(
+            "Dice",
+            "Glitched Die Respawns",
+            false,
+            "Makes the glitched die respawn on each level when bought");
+        glitchyMode = Config.Bind<bool>(
+            "Client Side",
+            "Glitchy Mode",
+            true,
+            "Makes certain things a bit \"Glitchy\" will not disable the enemies or dice ones though");
         Alarm.ConfigStuff();
     }
     
@@ -276,9 +320,19 @@ public class RepoDice : BaseUnityPlugin
             DieBehaviour.AllEffects.Add(effect);
         }
     }
-
-    // private void Update()
-    // {
-    //     // Code that runs every frame goes here
-    // }
+}
+public class BundleDumper : MonoBehaviour
+{
+    public void DumpBundles()
+    {
+        foreach (var bundle in AssetBundle.GetAllLoadedAssetBundles())
+        {
+            Debug.Log($"[Bundle] {bundle.name}");
+            string[] assets = bundle.GetAllAssetNames();
+            foreach (string asset in assets)
+            {
+                Debug.Log($"    [Asset] {asset}");
+            }
+        }
+    }
 }

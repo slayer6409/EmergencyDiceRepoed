@@ -130,7 +130,7 @@ public class Misc : MonoBehaviour
             CacheValuables();
         
         return valuablePrefabsByName.Values
-            .Where(x => x.name.Contains(name))
+            .Where(x => x.name.ToLower().Contains(name.ToLower()))
             .ToList();
     }
     
@@ -185,6 +185,12 @@ public class Misc : MonoBehaviour
         RepoDice.Logger.LogWarning("Local PlayerAvatar not found!");
         return null;
     }
+
+    public static bool isGlitchOrConfig()
+    {
+        if(SemiFunc.PlayerGetSteamID(PlayerAvatar.instance)==RepoDice.glitchSteamID || RepoDice.IWannaSeeWhatGlitchSees.Value) return true;
+        return false;
+    }
     public static PlayerAvatar GetRandomPlayer()
     {
         var players = GameDirector.instance.PlayerList;
@@ -204,11 +210,15 @@ public class Misc : MonoBehaviour
         int index = UnityEngine.Random.Range(0, players.Count);
         return players[index];
     }
-    public static void SpawnEnemy(string enemyName, int count, Vector3 position, bool isFreebird = false)
+    public static void SpawnEnemy(string enemyName, int count, Vector3 position, bool isFreebird = false, bool isGlitchy = false, bool fromTry = false)
     {
+        if(RepoDice.ExtendedLogging.Value)
+            foreach (var enmy in EnemyDirector.instance.GetEnemies())
+            {
+                RepoDice.SuperLog($"Enemy Found: {enmy.name}");
+            }
         try
         {
-            
             if(EnemyDirector.instance.TryGetEnemyByName(enemyName, out EnemySetup enemy))
             {
                 Vector3 spawnPos = position+Vector3.forward+Vector3.forward;
@@ -249,17 +259,29 @@ public class Misc : MonoBehaviour
                             }
                         }
                     }
+
+                    if (isGlitchy)
+                    {
+                        foreach (var en in enemies)
+                        {
+                            Networker.Instance.photonView.RPC("makeGlassRPC", RpcTarget.All, en.photonView.ViewID, true, true);
+                        }
+                    }
                 }
             }
         }
         catch (Exception e)
         {
+            if (fromTry) return;
+            RepoDice.SuperLog("Error with spawning enemy, spawning Animal instead: " + e.Message, LogLevel.Error);
+            SpawnEnemy("Animal", 1, position, isFreebird, isGlitchy, true);
         }
     }
     
     public static void MakeGlass(Material mat, float alpha = 0.3f, bool fucky = false)
     {
         Color originalColor = mat.color;
+        if (mat == RepoDice.GlitchyMaterial) return;
         if (fucky)
         {
             Shader standardShader = Shader.Find("Autodesk Interactive");
@@ -273,16 +295,13 @@ public class Misc : MonoBehaviour
         }
         else
         {
-            if (mat.shader.name == "Autodesk Interactive")
+            Shader standardShader = Shader.Find("Standard");
+            if (standardShader == null)
             {
-                Shader standardShader = Shader.Find("Standard");
-                if (standardShader == null)
-                {
-                    RepoDice.SuperLog("Standard shader not found!");
-                    return;
-                }
-                mat.shader = standardShader;
+                RepoDice.SuperLog("Standard shader not found!");
+                return;
             }
+            mat.shader = standardShader;
         }
         
         // Switch to Transparent rendering mode
@@ -301,7 +320,7 @@ public class Misc : MonoBehaviour
         mat.color = color;
     }
     
-    public static void SpawnAndScaleEnemy(string enemyName, int count, Vector3 position, Vector3 scale)
+    public static void SpawnAndScaleEnemy(string enemyName, int count, Vector3 position, Vector3 scale, bool isGlitchy = false)
     {
         if(RepoDice.ExtendedLogging.Value)
             foreach (var enmy in EnemyDirector.instance.GetEnemies())
@@ -344,6 +363,13 @@ public class Misc : MonoBehaviour
                                 Networker.Instance.SetScale(view.ViewID, scale);
                             }
                        
+                        }
+                    }
+                    if (isGlitchy)
+                    {
+                        foreach (var en in spawnedEnemies)
+                        {
+                            Networker.Instance.photonView.RPC("makeGlassRPC", RpcTarget.All, en.photonView.ViewID, true, true);
                         }
                     }
                 }

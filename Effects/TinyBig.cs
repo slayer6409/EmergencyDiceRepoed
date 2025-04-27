@@ -9,7 +9,7 @@ namespace RepoDice.Effects;
 public class TinyBig : IEffect
 {
     public string Name => "Tiny Big";
-    public EffectType Outcome => EffectType.Mixed;
+    public EffectType Outcome => EffectType.Good;
     public bool ShowDefaultTooltip => true;
     public string Tooltip => "It big but tiny";
 

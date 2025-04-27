@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Configuration;
 using Photon.Pun;
+using Photon.Realtime;
 using RepoDice.Effects;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -24,6 +25,11 @@ public abstract class DieBehaviour : Trap
     public PlayerAvatar? lastHolder;
     public static List<ConfigEntry<bool>> effectConfigs = new List<ConfigEntry<bool>>();
     public LayerMask groundMask = ~0;
+    public bool isItem = false;
+    public ItemToggle itemToggle;
+    public bool prevToggleState;
+    public bool rolledFromE = false;
+    
     public virtual void SetupDiceEffects()
     {
         Effects = new List<IEffect>(AllowedEffects);
@@ -39,17 +45,21 @@ public abstract class DieBehaviour : Trap
     }
     public void Start()
     {
-        PhysGrabObjectImpactDetector component = ((Component)this).GetComponent<PhysGrabObjectImpactDetector>();
+        PhysGrabObjectImpactDetector component = GetComponent<PhysGrabObjectImpactDetector>();
         if (component == null)
         {
             RepoDice.Logger.LogError("Failed to get PhysGrabObjectImpactDetector component!");
             return;
         }
+        itemToggle = gameObject.GetComponent<ItemToggle>();
         physGrabObject = GetComponent<PhysGrabObject>();
         rb = GetComponent<Rigidbody>();
-        Value val = ScriptableObject.CreateInstance<Value>();
-        val.valueMin = Math.Max(0, 180);
-        val.valueMax = Math.Max(val.valueMin, 2250);
+        if (!isItem)
+        {
+            Value val = ScriptableObject.CreateInstance<Value>();
+            val.valueMin = Math.Max(0, 180);
+            val.valueMax = Math.Max(val.valueMin, 2250);
+        }
         DiceModel = gameObject.transform.Find("Model").gameObject;
         SetupDiceEffects();
         SetupRollToEffectMapping();
@@ -61,10 +71,27 @@ public abstract class DieBehaviour : Trap
         isRolling = true;
         BlockPickupAndRollRPC();
     }
+
+    //I have it like this, so I can possibly make things happen in the shop
+    public virtual bool doShopStuff()
+    {
+        return RunManager.instance.levelCurrent == RunManager.instance.levelShop;
+    }
     
     public void FixedUpdate()
     { 
         if (isRolling) return;
+
+        if (doShopStuff()) return;
+
+        if (itemToggle != null && itemToggle.toggleState != prevToggleState)
+        {
+            isRolling = true;
+            rolledFromE = true;
+            if(SemiFunc.IsMasterClientOrSingleplayer()) BlockPickupAndRollRPC();
+            else photonView.RPC("BlockPickupAndRollRPC", RpcTarget.MasterClient);
+        }
+        prevToggleState = itemToggle != null && itemToggle.toggleState;
         
         if (physGrabObject.playerGrabbing.Count == 1 && lastHolder != physGrabObject.playerGrabbing[0].playerAvatar)
         {
@@ -80,7 +107,9 @@ public abstract class DieBehaviour : Trap
             if (SemiFunc.IsMasterClientOrSingleplayer()) BlockPickupAndRollRPC();
         }
     }
+
     
+    [PunRPC]
     public void BlockPickupAndRollRPC()
     {
         if (SemiFunc.IsMultiplayer())
@@ -111,16 +140,30 @@ public abstract class DieBehaviour : Trap
 
     public IEnumerator doSillyShit()
     {
-        while(isRolling)
+        while (isRolling)
         {
-            foreach (var player in physGrabObject.playerGrabbing)
+            foreach (var player in new List<PhysGrabber>(physGrabObject.playerGrabbing))
             {
                 player.ReleaseObject();
+            }
+            if (physGrabObject.playerGrabbing.Count == 0)
+            { 
+                if (rolledFromE && SemiFunc.IsMasterClientOrSingleplayer())
+                { 
+                    if (rb != null)
+                    {
+                        Vector3 randomDir = Random.onUnitSphere;
+                        randomDir.y = Mathf.Abs(randomDir.y); 
+                        float force = Random.Range(6f, 15f);   
+                        rb.AddForce(randomDir * force, ForceMode.Impulse);
+                        RepoDice.SuperLog($"rolling with {force}");
+                        rolledFromE = false;
+                    }
+                }
             }
             yield return null;
         }
     }
-    
     public IEnumerator waitForRoll()
     {
         float timer = 0f;
@@ -147,9 +190,13 @@ public abstract class DieBehaviour : Trap
             isRolling = false;
         }
         yield return new WaitForSeconds(0.5f);
-        if(isRolling) PhotonNetwork.Destroy(this.gameObject);
+        if(isRolling) doDestroy();
     }
-    
+
+    public virtual void doDestroy()
+    {
+        PhotonNetwork.Destroy(this.gameObject);
+    }
     
     bool IsGrounded(Rigidbody rgbdy, float checkDistance = 0.1f, LayerMask mask = default)
     { 
@@ -279,19 +326,17 @@ public abstract class DieBehaviour : Trap
         RepoDice.MainRegisterNewEffect(new BigFan());
         RepoDice.MainRegisterNewEffect(new DecreasedValue());
         RepoDice.MainRegisterNewEffect(new IncreasedValue());
+        RepoDice.MainRegisterNewEffect(new Sauger());
+        RepoDice.MainRegisterNewEffect(new JumpscareEffect());
         
-        
+        RepoDice.MainRegisterNewEffect(new GlitchyEnemy(), superDebug:true);
         RepoDice.MainRegisterNewEffect(new InstantReroll(), superDebug:true);
-        
-        
-        
-        
+        RepoDice.MainRegisterNewEffect(new GlitchyPlayer(), superDebug:true);
+        RepoDice.MainRegisterNewEffect(new FixPlayer(), superDebug:true);
         
         if(RepoDice.WesleysEnemiesPresent)RepoDice.MainRegisterNewEffect(new TinyLostDroid());
         if(RepoDice.WesleysEnemiesPresent)RepoDice.MainRegisterNewEffect(new ShortGusher());
         if(RepoDice.BigNukePresent)RepoDice.MainRegisterNewEffect(new SmolBigNuke());
         
-        
-        // RepoDice.MainRegisterNewEffect(new Doors());
     }
 }

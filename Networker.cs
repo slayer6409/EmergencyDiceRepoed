@@ -85,13 +85,90 @@ public class Networker : MonoBehaviourPun
     }
 
     [PunRPC]
-    public void makeGlassRPC(int photonViewID)
+    public void makePlayerGlass(int playerPhotonID, int deathHeadPhotonID, bool reverse)
+    {
+        PhotonView playerView = PhotonView.Find(playerPhotonID);
+        PhotonView headView = PhotonView.Find(deathHeadPhotonID);
+        var MM = playerView.gameObject.GetComponent<MaterialMemory>();
+        if (MM == null) MM = playerView.gameObject.AddComponent<MaterialMemory>();
+        var MM2 = headView.gameObject.GetComponent<MaterialMemory>();
+        if (MM2 == null) MM2 = headView.gameObject.AddComponent<MaterialMemory>();
+        var renderers1 = playerView.gameObject.transform.parent.Find("Player Visuals/[RIG]").GetComponentsInChildren<Renderer>();
+        var renderers2 = headView.GetComponentsInChildren<Renderer>();
+        foreach (var rnd in renderers1)
+        {
+            if (reverse)
+            {
+                if (!MM.materials.ContainsKey(rnd))
+                    MM.materials[rnd] = rnd.material; 
+
+                rnd.material = RepoDice.GlitchyMaterial;
+            }
+            else
+            {
+                if (rnd.material == RepoDice.GlitchyMaterial && MM.materials.ContainsKey(rnd))
+                    rnd.material = MM.materials[rnd];
+            }
+        }
+        //
+        // if (playerView.ViewID == PlayerAvatar.instance.gameObject.GetComponent<PhotonView>().ViewID)
+        // {
+        //     var pam = GameObject.Find("Player Avatar Menu/Player Visuals/[RIG]");
+        //     var rndrs = pam.GetComponentsInChildren<Renderer>();
+        //     var MM3 = pam.gameObject.GetComponent<MaterialMemory>();
+        //     if (MM3 == null) MM3 = pam.gameObject.AddComponent<MaterialMemory>();
+        //     foreach (var rnd in rndrs)
+        //     {
+        //         if (reverse)
+        //         {
+        //             if (!MM.materials.ContainsKey(rnd))
+        //                 MM.materials[rnd] = rnd.material; 
+        //             rnd.material = RepoDice.GlitchyMaterial;
+        //         }
+        //         else
+        //         {
+        //             if (rnd.material == RepoDice.GlitchyMaterial && MM.materials.ContainsKey(rnd))
+        //                 rnd.material = MM.materials[rnd];
+        //         }
+        //     }
+        // }
+    }
+    public IEnumerator DelayJumpscare()
+    {
+        yield return new WaitForSeconds(UnityEngine.Random.Range(10f, 60f));
+        photonView.RPC("doJumpscare", RpcTarget.All);
+    }
+    [PunRPC]
+    public void doJumpscare()
+    {
+        RepoDice.JumpscareScript.Scare();
+    }
+
+    [PunRPC]
+    public void makeGlassRPC(int photonViewID, bool canBeGlitchy, bool forceGlitchy)
     {
         PhotonView targetView = PhotonView.Find(photonViewID);
         var renderers = targetView.GetComponentsInChildren<Renderer>();
+        var MM = targetView.gameObject.GetComponent<MaterialMemory>();
+        if (MM == null) MM = targetView.gameObject.AddComponent<MaterialMemory>();
+
+        bool toUseGlitch = forceGlitchy || (RepoDice.glitchyMode.Value && canBeGlitchy && Random.value > 0.9f);
         foreach (var rnd in renderers)
         {
-            Misc.MakeGlass(rnd.material);
+            if (toUseGlitch)
+            {
+                if (!MM.materials.ContainsKey(rnd))
+                    MM.materials[rnd] = rnd.material; 
+
+                rnd.material = RepoDice.GlitchyMaterial;
+            }
+            else
+            {
+                if (rnd.material == RepoDice.GlitchyMaterial && MM.materials.ContainsKey(rnd))
+                    rnd.material = MM.materials[rnd];
+
+                Misc.MakeGlass(rnd.material);
+            }
         }
     }
 
@@ -510,4 +587,8 @@ public class Networker : MonoBehaviourPun
         SemiFunc.PlayerAvatarGetFromPhotonID(photonViewID).PlayerDeathRPC(0);
     }
     
+}
+public class MaterialMemory : MonoBehaviour
+{
+    public Dictionary<Renderer, Material> materials = new Dictionary<Renderer, Material>();
 }

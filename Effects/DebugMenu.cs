@@ -287,7 +287,7 @@ public class DebugMenu : MonoBehaviour
     {
         List<IEffect> effects = new List<IEffect>(DieBehaviour.AllowedEffects);
 
-        if(Misc.GetLocalPlayer().steamID == RepoDice.slayerSteamID) effects.Add(new InstantReroll());
+        if(Misc.GetLocalPlayer().steamID == RepoDice.slayerSteamID) effects = new List<IEffect>(DieBehaviour.AllEffects);
         FavoriteEffectManager.FavoriteData favoritesData = FavoriteEffectManager.LoadFavorites();
         List<string> favoriteEffectNames = favoritesData.Favorites;
 

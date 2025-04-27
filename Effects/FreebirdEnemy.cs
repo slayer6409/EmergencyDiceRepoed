@@ -19,7 +19,7 @@ public class FreebirdEnemy : IEffect
 
     public void Use(PlayerAvatar roller)
     {
-        string[] excluded = { "gnome", "destroyer", "banger", "spewer" , "sauger", "1","2","3","4","5","6","7","8","9", "droid", "lost", "gnomes"};
+        string[] excluded = { "gnome", "destroyer", "banger", "spewer" ,"test", "1","2","3","4","5","6","7","8","9", "droid", "lost", "gnomes"};
         var allEnemies = EnemyDirector.instance.enemiesDifficulty1
             .Concat(EnemyDirector.instance.enemiesDifficulty2)
             .Concat(EnemyDirector.instance.enemiesDifficulty3)
@@ -54,7 +54,7 @@ public class freebirdMaker : MonoBehaviour
         audiosrc.dopplerLevel = 0f;
         audiosrc.transform.localPosition = Vector3.up * 1f;
         audiosrc.priority = 10;
-        AddRainbowTrail();
+        //AddRainbowTrail();
         if (RepoDice.Copyright.Value)
         {
             audiosrc.clip = RepoDice.LoadedAssets.LoadAsset<AudioClip>("SpazzmaticaPolka");

@@ -21,32 +21,32 @@ public class Rainbow : DieBehaviour
     public void Start()
     {
         base.Start();
-        var colorChanger = DiceModel.AddComponent<CycleColors>();
-        colorChanger.colors = new List<Color>()
-        {
-            new Color(1f, 0f, 0f),     
-            new Color(1f, 0.5f, 0f),
-            new Color(1f, 1f, 0f),
-            new Color(0f, 1f, 0f),
-            new Color(0f, 0f, 1f),
-            new Color(0.29f, 0f, 0.51f),
-            new Color(0.56f, 0f, 1f)
-        };
-        var chance = Random.Range(0, 10);
-        if (chance > 8)
-        {
-            colorChanger.colors = new List<Color>()
-            {
-                new Color(Random.value, Random.value, Random.value),     
-                new Color(Random.value, Random.value, Random.value),
-                new Color(Random.value, Random.value, Random.value),
-                new Color(Random.value, Random.value, Random.value),
-                new Color(Random.value, Random.value, Random.value),
-                new Color(Random.value, Random.value, Random.value),
-                new Color(Random.value, Random.value, Random.value)
-            };
-        }
-        colorChanger.lerpDuration = 0.6f;
+        // var colorChanger = DiceModel.AddComponent<CycleColors>();
+        // colorChanger.colors = new List<Color>()
+        // {
+        //     new Color(1f, 0f, 0f),     
+        //     new Color(1f, 0.5f, 0f),
+        //     new Color(1f, 1f, 0f),
+        //     new Color(0f, 1f, 0f),
+        //     new Color(0f, 0f, 1f),
+        //     new Color(0.29f, 0f, 0.51f),
+        //     new Color(0.56f, 0f, 1f)
+        // };
+        // var chance = Random.Range(0, 10);
+        // if (chance > 8)
+        // {
+        //     colorChanger.colors = new List<Color>()
+        //     {
+        //         new Color(Random.value, Random.value, Random.value),     
+        //         new Color(Random.value, Random.value, Random.value),
+        //         new Color(Random.value, Random.value, Random.value),
+        //         new Color(Random.value, Random.value, Random.value),
+        //         new Color(Random.value, Random.value, Random.value),
+        //         new Color(Random.value, Random.value, Random.value),
+        //         new Color(Random.value, Random.value, Random.value)
+        //     };
+        // }
+        // colorChanger.lerpDuration = 0.6f;
     }
 
     public override void Roll()
