@@ -22,10 +22,11 @@ public class SemiTransparentDoors : IEffect
             .ToList();
         foreach (var door in doors)
         {
+            if(door.GetComponents<Renderer>().Length>5) continue;
             var pv = door.GetComponent<PhotonView>();
             if (pv == null) door.GetComponentInChildren<PhotonView>();
             if (pv == null) door.GetComponentInParent<PhotonView>();
-            if (pv != null) Networker.Instance.photonView.RPC("makeGlassRPC", RpcTarget.All, pv.ViewID, true, false);
+            if (pv != null) Networker.Instance.photonView.RPC(nameof(Networker.Instance.makeGlassRPC), RpcTarget.All, pv.ViewID, true, false);
             else
             {
                 RepoDice.SuperLog(door.name + "has no photon view");

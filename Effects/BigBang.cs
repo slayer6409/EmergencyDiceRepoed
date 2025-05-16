@@ -17,6 +17,6 @@ public class BigBang : IEffect
     public void Use(PlayerAvatar roller)
     { 
         Vector3 spawnPos = roller.transform.position + roller.transform.forward;
-        Misc.SpawnAndScaleEnemy("Banger", 1, spawnPos, new Vector3(3,3,3));
+        Misc.SpawnAndScaleEnemy("Bang", 1, spawnPos, new Vector3(3,3,3));
     }
 }

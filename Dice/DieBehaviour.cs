@@ -29,6 +29,8 @@ public abstract class DieBehaviour : Trap
     public ItemToggle itemToggle;
     public bool prevToggleState;
     public bool rolledFromE = false;
+    public PhotonView view;
+    private bool hasRolled = false;
     
     public virtual void SetupDiceEffects()
     {
@@ -61,6 +63,7 @@ public abstract class DieBehaviour : Trap
             val.valueMax = Math.Max(val.valueMin, 2250);
         }
         DiceModel = gameObject.transform.Find("Model").gameObject;
+        view = GetComponent<PhotonView>();
         SetupDiceEffects();
         SetupRollToEffectMapping();
     }
@@ -89,7 +92,7 @@ public abstract class DieBehaviour : Trap
             isRolling = true;
             rolledFromE = true;
             if(SemiFunc.IsMasterClientOrSingleplayer()) BlockPickupAndRollRPC();
-            else photonView.RPC("BlockPickupAndRollRPC", RpcTarget.MasterClient);
+            else view.RPC(nameof(BlockPickupAndRollRPC), RpcTarget.MasterClient);
         }
         prevToggleState = itemToggle != null && itemToggle.toggleState;
         
@@ -99,6 +102,7 @@ public abstract class DieBehaviour : Trap
             return;
         }
         
+        if (isRolling) return;
         if(physGrabObject.grabbed)return;
         
         if (rb.velocity.magnitude > RepoDice.throwSpeed.Value)
@@ -112,15 +116,18 @@ public abstract class DieBehaviour : Trap
     [PunRPC]
     public void BlockPickupAndRollRPC()
     {
-        if (SemiFunc.IsMultiplayer())
+       
+        if (!SemiFunc.IsMultiplayer())
         {
             setStuff();
         }
         else
         {
-            photonView.RPC("setStuff",RpcTarget.All);
+            view.RPC(nameof(setStuff),RpcTarget.All);
         }
+
         if (lastHolder == null) lastHolder = Misc.GetRandomAlivePlayer();
+
         if (lastHolder != null)
         {
             StartCoroutine(waitForRoll());
@@ -182,15 +189,27 @@ public abstract class DieBehaviour : Trap
         }
         try
         {
-            Roll();
+            doRoll();
         }
         catch(Exception e)
         {
             RepoDice.Logger.LogError(e.Message);
             isRolling = false;
+            hasRolled = false;
         }
         yield return new WaitForSeconds(0.5f);
         if(isRolling) doDestroy();
+    }
+
+    public void doRoll()
+    {
+        if (hasRolled)
+        {
+            RepoDice.SuperLog("Roll() was called more than once!");
+            return;
+        }
+        hasRolled = true;
+        Roll();
     }
 
     public virtual void doDestroy()
@@ -246,6 +265,7 @@ public abstract class DieBehaviour : Trap
         int diceRoll = UnityEngine.Random.Range(1, 7);
         IEffect randomEffect = GetRandomEffect(diceRoll, Effects);
         if (randomEffect == null) return;
+        if(randomEffect == new InstantReroll()) if(fromRainbow) randomEffect = GetRandomEffect(diceRoll+1, Effects);
         Networker.Instance.photonView.RPC("LogToAllRPC", RpcTarget.Others,$"Rolling {randomEffect.Name}");
         Networker.Instance.LogToAllRPC($"Rolling {randomEffect.Name}");
         string messageToSay = $"Rolling {randomEffect.Name}";
@@ -328,9 +348,14 @@ public abstract class DieBehaviour : Trap
         RepoDice.MainRegisterNewEffect(new IncreasedValue());
         RepoDice.MainRegisterNewEffect(new Sauger());
         RepoDice.MainRegisterNewEffect(new JumpscareEffect());
+        RepoDice.MainRegisterNewEffect(new ShootyShooter());
+        RepoDice.MainRegisterNewEffect(new SeeNoEvil());
+        RepoDice.MainRegisterNewEffect(new PerfectHatred());
+        RepoDice.MainRegisterNewEffect(new InstantReroll());
+        RepoDice.MainRegisterNewEffect(new TurnThatFrown());
         
+        RepoDice.MainRegisterNewEffect(new TestDoorStuck(), superDebug:true);
         RepoDice.MainRegisterNewEffect(new GlitchyEnemy(), superDebug:true);
-        RepoDice.MainRegisterNewEffect(new InstantReroll(), superDebug:true);
         RepoDice.MainRegisterNewEffect(new GlitchyPlayer(), superDebug:true);
         RepoDice.MainRegisterNewEffect(new FixPlayer(), superDebug:true);
         

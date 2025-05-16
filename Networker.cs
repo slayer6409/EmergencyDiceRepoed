@@ -10,6 +10,7 @@ using RepoDice.Effects;
 using REPOLib.Extensions;
 using REPOLib.Modules;
 using Steamworks;
+using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.InputSystem.Utilities;
@@ -74,13 +75,17 @@ public class Networker : MonoBehaviourPun
         if (player.playerHealth.health > 0) return;
         if (!player.playerDeathHead.triggered)
             player.playerDeathHead.Trigger();
-        if (PhotonNetwork.IsMasterClient) player.playerDeathHead.physGrabObject.Teleport(LevelGenerator.Instance.LevelPathTruck.transform.position, LevelGenerator.Instance.LevelPathTruck.transform.rotation);
-        StartCoroutine(waitRevive(player));
+        if (PhotonNetwork.IsMasterClient)
+        {
+            player.playerDeathHead.physGrabObject.Teleport(LevelGenerator.Instance.LevelPathTruck.transform.position + Vector3.up, LevelGenerator.Instance.LevelPathTruck.transform.rotation);
+            StartCoroutine(waitRevive(player));
+        }
     }
 
     public IEnumerator waitRevive(PlayerAvatar? player)
     {
-        yield return new WaitForSeconds(1f);
+        yield return new WaitUntil(() => player.playerDeathHead.isActiveAndEnabled);
+        yield return new WaitForSeconds(0.5f);
         player?.Revive(true);
     }
 
@@ -159,17 +164,22 @@ public class Networker : MonoBehaviourPun
             {
                 if (!MM.materials.ContainsKey(rnd))
                     MM.materials[rnd] = rnd.material; 
-
                 rnd.material = RepoDice.GlitchyMaterial;
             }
             else
             {
                 if (rnd.material == RepoDice.GlitchyMaterial && MM.materials.ContainsKey(rnd))
                     rnd.material = MM.materials[rnd];
-
                 Misc.MakeGlass(rnd.material);
             }
         }
+    }
+
+    [PunRPC]
+    public void forceNeckBreak(int photonViewID)
+    {
+        if(PlayerAvatar.instance.photonView.ViewID!=photonViewID) return;
+        TurnThatFrown.BreakNeck();
     }
 
     [PunRPC]
@@ -232,6 +242,7 @@ public class Networker : MonoBehaviourPun
                 break;
             case Misc.UpgradeType.health:
                 PlayerAvatar.instance.playerHealth.maxHealth += 20;
+                PlayerAvatar.instance.playerHealth.health += 20;
                 break;
             case Misc.UpgradeType.jumps:
                 PlayerController.instance.JumpExtra += 1;
@@ -255,14 +266,41 @@ public class Networker : MonoBehaviourPun
         RepoDice.Logger.LogInfo(message);
     }
 
+    
+    
     [PunRPC]
-    public GameObject spawnValuableRPC(string itemName, Vector3 position)
+    public void spawnValuable(string itemName, Vector3 position)
     {
         Vector3 spawnPos = position;
         GameObject? randomPrefab = Misc.GetValuableByName(itemName);
-        return spawnPrefab(randomPrefab, position);
+        spawnPrefab(randomPrefab, position);
     }
-    
+
+    [PunRPC]
+    public void playSoundForEveryone(string soundName)
+    {
+        AudioSource.PlayClipAtPoint(RepoDice.sounds[soundName], PlayerAvatar.instance.transform.position, RepoDice.Volume.Value);
+    }
+
+    [PunRPC]
+    public void doSillyShit()
+    {
+        var ShopDoor = GameObject.Find("Shop Door"); //I did it this way for a quick mockup lol
+        var rb = ShopDoor.GetComponentInChildren<Rigidbody>();
+        rb.isKinematic = true;
+        Networker.Instance.photonView.RPC(nameof(Networker.Instance.makeGlassRPC), RpcTarget.All, ShopDoor.GetComponentInChildren<PhotonView>().ViewID, false, false);
+        foreach (var render in ShopDoor.GetComponentsInChildren<Renderer>())
+        {
+            Misc.MakeGlass(render.material);
+        }
+    }
+    [PunRPC]
+    public void undoSillyShit()
+    {
+        var ShopDoor = GameObject.Find("Shop Door");
+        var rb = ShopDoor.GetComponentInChildren<Rigidbody>();
+        rb.isKinematic = false;
+    }
 
     [PunRPC]
     public void PlayAudioAtPoint(Vector3 position, string audioName)
@@ -284,7 +322,6 @@ public class Networker : MonoBehaviourPun
         source.maxDistance = 15f;
         source.rolloffMode = AudioRolloffMode.Linear;
         source.dopplerLevel = 0f;
-
         float volumeToUse = RepoDice.Volume.Value;
         volumeToUse = Mathf.Clamp(volumeToUse, 0.01f, 1f);
         
@@ -532,11 +569,24 @@ public class Networker : MonoBehaviourPun
             controller.CollisionController?.ResetFalling();
         }
     }
+
+    [PunRPC]
+    public void SpawnAndScaleEnemy(string enemyName, int count, Vector3 position, Vector3 scale,
+        bool isGlitchy)
+    {
+        Misc.SpawnAndScaleEnemy(enemyName, count, position, scale, isGlitchy);
+    }
+
+    [PunRPC]
+    public void spawnItemRPC(string itemName, Vector3 position, bool save)
+    {
+        SpawnItem(itemName, position,  save);
+    }
     
-    public GameObject SpawnItemRPC(string item , Vector3 position)
+    public GameObject SpawnItem(string item, Vector3 position, bool save = false)
     { 
         Vector3 spawnPos = position + new Vector3(0, 1.5f,0);
-        var items = StatsManager.instance.GetItems();
+        var items = StatsManager.instance.itemDictionary.Values.ToList();
         var upgrades = items.Where(x=>x.itemName.ToUpper().Contains(item.ToUpper())).ToList();
         
         var chosen = upgrades[Random.Range(0, upgrades.Count)];
@@ -546,7 +596,36 @@ public class Networker : MonoBehaviourPun
         if(upgrades.Count==0)return null;
         
        
-        return spawnPrefab(chosen.prefab, position, true);
+        var spawned = spawnPrefab(chosen.prefab, position, true);
+        if (save)
+        {
+            StartCoroutine(delaySave(spawned));
+        }
+        return spawned;
+    }
+
+    public IEnumerator delaySave(GameObject item)
+    {
+        //I have to delay it so it properly initializes 
+        yield return new WaitForSeconds(5);
+        try
+        {
+            var attributes = item.GetComponent<ItemAttributes>();   
+            var phtvw = item.GetComponent<PhotonView>();
+            RepoDice.SuperLog(attributes.instanceName);
+            if (!StatsManager.instance.item.ContainsKey(attributes.instanceName))
+            {
+                var idx = StatsManager.instance.GetIndexThatHoldsThisItemFromItemDictionary(attributes.item.itemAssetName);
+                PunManager.instance.AddingItem(attributes.instanceName, idx, phtvw.ViewID, attributes);
+            }
+            StatsManager.instance.itemsPurchased[attributes.item.itemAssetName]++;
+            StatsManager.instance.itemsPurchasedTotal[attributes.item.itemAssetName]++;
+        }
+        catch (Exception e)
+        {
+            RepoDice.SuperLog(e.Message, LogLevel.Error);
+        }
+       
     }
 
     #endregion

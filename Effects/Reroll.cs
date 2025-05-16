@@ -25,10 +25,11 @@ public class Reroll : IEffect
         }
         else
         {
-            Item? randomPrefab = StatsManager.instance.GetItems().FirstOrDefault(x => x.name == RandomDice.Replace("_ItemDie",""));
+            var allItems = StatsManager.instance.itemDictionary.Values.ToList();
+            Item? randomPrefab = allItems.FirstOrDefault(x => x.name == RandomDice.Replace("_ItemDie",""));
             if (randomPrefab != null)
             {
-                Networker.Instance.SpawnItemRPC(randomPrefab.itemName, spawnPos);
+                Networker.Instance.SpawnItem(randomPrefab.itemName, spawnPos);
             }
         }
         

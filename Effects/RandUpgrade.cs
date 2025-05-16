@@ -16,7 +16,7 @@ public class RandUpgrade : IEffect
     public void Use(PlayerAvatar roller)
     {
         Vector3 spawnPos = roller.transform.position + roller.transform.forward * 2.5f;
-        Networker.Instance.SpawnItemRPC("Upgrade", spawnPos);
+        Networker.Instance.SpawnItem("Upgrade", spawnPos);
     }
 
 }

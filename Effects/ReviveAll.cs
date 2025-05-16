@@ -18,8 +18,7 @@ public class ReviveAll : IEffect
     {
         foreach (var player in GameDirector.instance.PlayerList)
         {
-            Networker.Instance.reviveRPC(player.photonView.ViewID);
-            Networker.Instance.photonView.RPC("reviveRPC", RpcTarget.Others ,player.photonView.ViewID);
+            Networker.Instance.photonView.RPC(nameof(Networker.Instance.reviveRPC), RpcTarget.All ,player.photonView.ViewID);
         }
     }
 }

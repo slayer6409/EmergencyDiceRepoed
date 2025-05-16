@@ -16,7 +16,7 @@ public class ReturnToShip : IEffect
 
     public void Use(PlayerAvatar roller)
     { 
-        if(SemiFunc.IsMultiplayer())Networker.Instance.photonView.RPC("ForceTeleportRPC", RpcTarget.All, roller.photonView.ViewID, LevelGenerator.Instance.LevelPathTruck.transform.position,LevelGenerator.Instance.LevelPathTruck.transform.rotation);
+        if(SemiFunc.IsMultiplayer()) Networker.Instance.photonView.RPC("ForceTeleportRPC", RpcTarget.All, roller.photonView.ViewID, LevelGenerator.Instance.LevelPathTruck.transform.position,LevelGenerator.Instance.LevelPathTruck.transform.rotation);
             else Networker.Instance.ForceTeleportRPC(roller.photonView.ViewID, LevelGenerator.Instance.LevelPathTruck.transform.position,LevelGenerator.Instance.LevelPathTruck.transform.rotation);
     }
 }

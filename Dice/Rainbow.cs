@@ -10,7 +10,7 @@ public class Rainbow : DieBehaviour
 {
     public override void SetupRollToEffectMapping()
     {
-        RollToEffect.Add(1, new EffectType[] { EffectType.Bad, EffectType.Awful });
+        RollToEffect.Add(1, new EffectType[] { EffectType.Rainbow, EffectType.Awful, EffectType.Bad });
         RollToEffect.Add(2, new EffectType[] { EffectType.Mixed, EffectType.Bad, EffectType.Awful });
         RollToEffect.Add(3, new EffectType[] { EffectType.Mixed });
         RollToEffect.Add(4, new EffectType[] { EffectType.Mixed });
@@ -49,19 +49,19 @@ public class Rainbow : DieBehaviour
         // colorChanger.lerpDuration = 0.6f;
     }
 
-    public override void Roll()
-    {
-        int diceRoll = UnityEngine.Random.Range(1, 7);
-        IEffect randomEffect = GetRandomEffect(diceRoll, Effects);
-        if (diceRoll == 1 && !fromRainbow) randomEffect = new InstantReroll();
-        if (randomEffect == null) return;
-        Networker.Instance.photonView.RPC("LogToAllRPC", RpcTarget.Others,$"Rolling {randomEffect.Name}");
-        Networker.Instance.LogToAllRPC($"Rolling {randomEffect.Name}");
-        string messageToSay = $"Rolling {randomEffect.Name}";
-        if(!RepoDice.SpoilerMode.Value) messageToSay = randomEffect.Tooltip;
-        lastHolder.photonView.RPC("ChatMessageSendRPC", RpcTarget.All, messageToSay, false);
-        
-        randomEffect.Use(lastHolder);
-        explodeMachoAndGlitch(1);
-    }
+    // public override void Roll()
+    // {
+    //     int diceRoll = UnityEngine.Random.Range(1, 7);
+    //     IEffect randomEffect = GetRandomEffect(diceRoll, Effects);
+    //     if (diceRoll == 1 && !fromRainbow && Random.value>0.74f) randomEffect = new InstantReroll();
+    //     if (randomEffect == null) return;
+    //     Networker.Instance.photonView.RPC("LogToAllRPC", RpcTarget.Others,$"Rolling {randomEffect.Name}");
+    //     Networker.Instance.LogToAllRPC($"Rolling {randomEffect.Name}");
+    //     string messageToSay = $"Rolling {randomEffect.Name}";
+    //     if(!RepoDice.SpoilerMode.Value) messageToSay = randomEffect.Tooltip;
+    //     lastHolder.photonView.RPC("ChatMessageSendRPC", RpcTarget.All, messageToSay, false);
+    //     
+    //     randomEffect.Use(lastHolder);
+    //     explodeMachoAndGlitch(1);
+    // }
 }

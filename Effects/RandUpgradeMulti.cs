@@ -17,8 +17,7 @@ public class RandUpgradeMulti : IEffect
     {
         foreach (var player in GameDirector.instance.PlayerList)
         {
-            Networker.Instance.photonView.RPC("addUpgradeRandomRPC", RpcTarget.Others,player.photonView.ViewID);
-            Networker.Instance.addUpgradeRandomRPC(PlayerAvatar.instance.photonView.ViewID);
+            Networker.Instance.photonView.RPC("addUpgradeRandomRPC", RpcTarget.All,player.photonView.ViewID);
         }
     }
 

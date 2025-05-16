@@ -7,11 +7,12 @@
 Actually throw the dice to roll it.<br>
 Fling it across the room!
 
-Currently adds 4 dice:
+Currently adds 5 dice:
 - **The Gambler** – Can roll any effect.
 - **The Saint** - Rolls good effects except on rolling a 1
 - **The Sacrificer** - Rolls bad effects only, with an added effect of returning you directly to the truck
 - **Rainbow Die** - Rolls Mostly Mixed Effects but has a small chance of being good/horrible effects, just don't roll a 1 ok...
+- **Glitched Die** - Shop die, can be a bit... Glitchy...(joke it works fine)
 
 ## Effects
 

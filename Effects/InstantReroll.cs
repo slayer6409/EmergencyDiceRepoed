@@ -11,7 +11,7 @@ namespace RepoDice.Effects;
 public class InstantReroll : IEffect
 {
     public string Name => "Instant Reroll";
-    public EffectType Outcome => EffectType.Bad;
+    public EffectType Outcome => EffectType.Rainbow;
     public bool ShowDefaultTooltip => true;
     public string Tooltip => "Try again and again and again!";
 

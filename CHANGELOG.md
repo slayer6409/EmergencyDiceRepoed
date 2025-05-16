@@ -1,3 +1,29 @@
+- **1.0.10**
+    - Fixed possible multiple rolls (Again)
+    - Made the health gained from random temp stat also give you the health
+    - Possible Fix for Revive (It worked fine in testing with minimal mods)
+    - Some other changes
+    - Future dice effects setup
+      - New Dice Effect Typing that way I can have specific effects per dice easier
+      - Any new dice effects using these will not roll on any dice and will only be available using select effect menu
+  
+- **1.0.9**
+    - Fixed possible multiple rolls
+    - Possible fix for revive doing weird things
+    - Fix for Random Upgrade Multi giving host MANY upgrades based on player count
+    - Other various fixes here and there
+  
+- **1.0.8**
+    - Fixed some issues
+    - Changed some things to work with the current Version of RepoLib
+    - Some enemies will still error on spawn, (such as the Bangers) but those _should be_ fine and they shouldn't constantly spam errors anymore
+  
+- **1.0.7**
+    - Fixed an inverted if statement
+    - Fixed some other issues with hinge breaker (limited it)
+    - Added the ability for items spawned from "Random item" to be saved after the round via config
+    - Some other changes
+
 - **1.0.6**
     - Fixed some issues
     - Added new Event

@@ -17,6 +17,6 @@ public class TinyLostDroid : IEffect
     public void Use(PlayerAvatar roller)
     { 
         Vector3 spawnPos = roller.transform.position + roller.transform.forward;
-        Misc.SpawnAndScaleEnemy("Lost Droid", 1, spawnPos, new Vector3(0.6f,0.6f,0.6f));
+        Misc.SpawnAndScaleEnemy("LostDroid", 1, spawnPos, new Vector3(0.6f,0.6f,0.6f));
     }
 }

@@ -35,7 +35,7 @@
           <ExcludePluginOutput>true</ExcludePluginOutput>
       </Reference>
       <Reference Include="REPOLib">
-        <HintPath>..\..\..\AppData\Roaming\com.kesomannen.gale\repo\profiles\Glitch\BepInEx\plugins\Zehs-REPOLib\REPOLib.dll</HintPath>
+        <HintPath>..\..\..\AppData\Roaming\com.kesomannen.gale\repo\profiles\Default\BepInEx\plugins\Zehs-REPOLib\REPOLib.dll</HintPath>
           <Private>false</Private>
           <ExcludePluginOutput>true</ExcludePluginOutput>
       </Reference>

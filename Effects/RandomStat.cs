@@ -18,7 +18,7 @@ public class RandomStat : IEffect
     {
         var pv = Misc.GetRandomAlivePlayer().photonView.ViewID;
         Misc.UpgradeType value = Misc.GetRandomEnum<Misc.UpgradeType>();
-        if(SemiFunc.IsMultiplayer()) Networker.Instance.photonView.RPC("addTempStatRPC", RpcTarget.All,roller.photonView.ViewID,value);
+        if(SemiFunc.IsMultiplayer()) Networker.Instance.photonView.RPC(nameof(Networker.Instance.addTempStatRPC), RpcTarget.All,roller.photonView.ViewID,value);
         else Networker.Instance.addTempStatRPC(roller.photonView.ViewID,value);
         
     }

@@ -6,7 +6,10 @@ public enum EffectType
     Bad,
     Mixed,
     Good,
-    Great
+    Great,
+    Horrendous,
+    Abhorrent,
+    Rainbow
 }
 
 public interface IEffect

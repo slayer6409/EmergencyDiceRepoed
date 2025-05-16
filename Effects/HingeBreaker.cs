@@ -17,14 +17,17 @@ public class HingeBreaker : IEffect
     public void Use(PlayerAvatar roller)
     {
         PhysGrabHinge[] allHinges = GameObject.FindObjectsOfType<PhysGrabHinge>();
-        //string[] targets = { "DOOR", "LOCKER", "CABINET", "SNOW VEHICLE", "FRIDGE"};
+        string[] targets = { "DOOR"/*, "LOCKER", "CABINET", "SNOW VEHICLE", "FRIDGE"*/};
+        int counter = 0;
         foreach (var hinge in allHinges)
         {
-            //string name = hinge.transform.parent.gameObject.name.ToUpper();
-            //bool containsTarget = targets.Any(tar => name.Contains(tar));
-            //if(!containsTarget)continue;
+            if(counter>10) return;
+            string name = hinge.transform.parent.gameObject.name.ToUpper();
+            bool containsTarget = targets.Any(tar => name.Contains(tar));
+            if(!containsTarget)continue;
             if (!hinge.dead && !hinge.broken)
             {
+                counter++;
                 hinge.HingeBreakRPC(); // Locally apply all effects
                 if (PhotonNetwork.IsMasterClient)
                 {

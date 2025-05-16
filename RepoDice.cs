@@ -18,7 +18,7 @@ namespace RepoDice;
 
 //Yes I know my coding is a bit weird 
 
-[BepInPlugin("Slayer6409.EmergencyDiceREPO", "Emergency Dice REPO", "1.0.6")]
+[BepInPlugin("Slayer6409.EmergencyDiceREPO", "Emergency Dice REPO", "1.0.10")]
 [BepInDependency(REPOLib.MyPluginInfo.PLUGIN_GUID)]
 [BepInDependency("bulletbot.moreupgrades", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("WesleysEnemies", BepInDependency.DependencyFlags.SoftDependency)]
@@ -42,6 +42,7 @@ public class RepoDice : BaseUnityPlugin
     public static ConfigEntry<bool> muteFreebird;
     public static ConfigEntry<bool> removeSaint;
     public static ConfigEntry<bool> glitchedRespawn;
+    public static ConfigEntry<bool> keepItems;
     public static ConfigEntry<bool> glitchyMode;
     public static ConfigEntry<float> Volume;
     private InputAction debugMenuAction;
@@ -98,6 +99,7 @@ public class RepoDice : BaseUnityPlugin
         sounds.Add("Bald", LoadedAssets.LoadAsset<AudioClip>("Glitchimnotbald"));
         sounds.Add("Bald2", LoadedAssets.LoadAsset<AudioClip>("GlitchGodfuckingdammit"));
         sounds.Add("purr", LoadedAssets.LoadAsset<AudioClip>("purr"));
+        sounds.Add("boom", LoadedAssets.LoadAsset<AudioClip>("boom"));
 
         if (Chainloader.PluginInfos.ContainsKey("bulletbot.moreupgrades")) {MoreUpgradesPresent = true; Logger.LogInfo($"More upgrades compatibility enabled!");}
         if (Chainloader.PluginInfos.ContainsKey("WesleysEnemies")) {WesleysEnemiesPresent = true; Logger.LogInfo($"Wesley's Enemies compatibility enabled!");}
@@ -265,6 +267,11 @@ public class RepoDice : BaseUnityPlugin
             "Glitchy Mode",
             true,
             "Makes certain things a bit \"Glitchy\" will not disable the enemies or dice ones though");
+        keepItems = Config.Bind<bool>(
+            "Dice",
+            "Keep Items",
+            false,
+            "Makes the items from \"Random Item\" save after rounds");
         Alarm.ConfigStuff();
     }
     
@@ -276,7 +283,7 @@ public class RepoDice : BaseUnityPlugin
         {
             if(Misc.GetLocalPlayer().steamID != slayerSteamID && Misc.GetLocalPlayer().steamID != glitchSteamID && !SemiFunc.IsMasterClientOrSingleplayer()) return;
         }
-        DebugMenu.ShowSelectEffectMenu();
+        DebugMenu.showDebugMenu();
     }
     internal void Patch()
     {

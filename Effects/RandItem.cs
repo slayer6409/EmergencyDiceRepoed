@@ -16,9 +16,9 @@ public class RandItem : IEffect
 
     public void Use(PlayerAvatar roller)
     {
-        var allItems = StatsManager.instance.GetItems();
+        var allItems = StatsManager.instance.itemDictionary.Values.ToList();
         var randItem = allItems[Random.Range(0, allItems.Count)];
         Vector3 spawnPos = roller.transform.position + roller.transform.forward * 2.5f;
-        Networker.Instance.SpawnItemRPC(randItem.itemName, spawnPos);
+        var x = Networker.Instance.SpawnItem(randItem.itemName, spawnPos, RepoDice.keepItems.Value);
     }
 }

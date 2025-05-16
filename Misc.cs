@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using BepInEx.Logging;
 using Photon.Pun;
+using RepoDice.Effects;
 using REPOLib.Extensions;
 using REPOLib.Modules;
+using Unity.VisualScripting;
 using UnityEngine;
 using Logger = Photon.Voice.Unity.Logger;
 using Random = UnityEngine.Random;
@@ -132,8 +135,8 @@ public class Misc : MonoBehaviour
         return valuablePrefabsByName.Values
             .Where(x => x.name.ToLower().Contains(name.ToLower()))
             .ToList();
-    }
-    
+    } 
+
     public static GameObject? GetValuableByName(string name)
     {
         if (valuablePrefabsByName.Count == 0)
@@ -210,16 +213,19 @@ public class Misc : MonoBehaviour
         int index = UnityEngine.Random.Range(0, players.Count);
         return players[index];
     }
-    public static void SpawnEnemy(string enemyName, int count, Vector3 position, bool isFreebird = false, bool isGlitchy = false, bool fromTry = false)
+    public static void SpawnEnemy(string enemyName, int count, Vector3 position, bool isFreebird = false, bool isGlitchy = false, bool fromTry = false, bool hunterStuff = false)
     {
         if(RepoDice.ExtendedLogging.Value)
-            foreach (var enmy in EnemyDirector.instance.GetEnemies())
+            foreach (var enmy in getEnemies())
             {
                 RepoDice.SuperLog($"Enemy Found: {enmy.name}");
             }
         try
         {
-            if(EnemyDirector.instance.TryGetEnemyByName(enemyName, out EnemySetup enemy))
+            var enemy = getEnemies().FirstOrDefault(x => x.name == enemyName);
+            if (enemy == null) enemy = getEnemies().FirstOrDefault(x => NameContains(x, enemyName));
+            if(enemy==null) RepoDice.SuperLog(enemyName + " not found!");
+            if(enemy!=null)
             {
                 Vector3 spawnPos = position+Vector3.forward+Vector3.forward;
                 int counter = 0;
@@ -264,7 +270,23 @@ public class Misc : MonoBehaviour
                     {
                         foreach (var en in enemies)
                         {
-                            Networker.Instance.photonView.RPC("makeGlassRPC", RpcTarget.All, en.photonView.ViewID, true, true);
+                            Networker.Instance.photonView.RPC(nameof(Networker.Instance.makeGlassRPC), RpcTarget.All, en.photonView.ViewID, true, true);
+                        }
+                    }
+
+                    if (hunterStuff)
+                    {
+                        int shotsToFire = UnityEngine.Random.Range(8, 15);
+                        foreach (var en in enemies)
+                        {
+                            var hntr = en.GetComponentInChildren<EnemyHunter>();
+                            if (hntr != null)
+                            {
+                                var hntmno = hntr.transform.AddComponent<FastShooterMono>();
+                                hntmno.hunter = hntr;
+                                hntmno.shotsAtOnce = shotsToFire;
+                            } 
+                            else RepoDice.SuperLog($"Hunter {en.name} not found!");
                         }
                     }
                 }
@@ -273,11 +295,45 @@ public class Misc : MonoBehaviour
         catch (Exception e)
         {
             if (fromTry) return;
-            RepoDice.SuperLog("Error with spawning enemy, spawning Animal instead: " + e.Message, LogLevel.Error);
+            RepoDice.SuperLog("Error with spawning enemy, spawning Animal instead: " + e, LogLevel.Error);
             SpawnEnemy("Animal", 1, position, isFreebird, isGlitchy, true);
         }
     }
-    
+
+    public static bool NameContains(EnemySetup enemySetup, string name)
+    {
+        if (enemySetup == null)
+        {
+            return false;
+        }
+
+        if (LooseStringMatch(enemySetup.name, name))
+        {
+            return true;
+        }
+
+        EnemyParent? enemyPrnt = null;
+        foreach (var spawnObject in enemySetup.spawnObjects.Where(x => x != null).Distinct())
+        {
+            if (spawnObject.TryGetComponent(out enemyPrnt)) ;
+        }
+        if (enemyPrnt!=null)
+        {
+            if (LooseStringMatch(enemyPrnt.enemyName, name))
+            {
+                return true;
+            }
+
+            if (LooseStringMatch(enemyPrnt.gameObject.name, name))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
     public static void MakeGlass(Material mat, float alpha = 0.3f, bool fucky = false)
     {
         Color originalColor = mat.color;
@@ -304,7 +360,6 @@ public class Misc : MonoBehaviour
             mat.shader = standardShader;
         }
         
-        // Switch to Transparent rendering mode
         mat.SetFloat("_Mode", 3);
         mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
         mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
@@ -319,17 +374,44 @@ public class Misc : MonoBehaviour
         color.a = alpha;
         mat.color = color;
     }
-    
+
+    private static List<EnemySetup> cachedEnemies = new();
+    public static ReadOnlyCollection<EnemySetup> getEnemies()
+    {
+        if (cachedEnemies.Count == 0)
+        {
+            var list = new List<EnemySetup>();
+            list.AddRange(EnemyDirector.instance.enemiesDifficulty1);
+            list.AddRange(EnemyDirector.instance.enemiesDifficulty2);
+            list.AddRange(EnemyDirector.instance.enemiesDifficulty3);
+            cachedEnemies = list;
+        }
+        return cachedEnemies.AsReadOnly();
+    }
+    public static bool LooseStringMatch(string a, string b)
+    {
+        string normA = RemoveWhitespace(a).ToLowerInvariant();
+        string normB = RemoveWhitespace(b).ToLowerInvariant();
+        return normA == normB;
+    }
+
+    private static string RemoveWhitespace(string input)
+    {
+        return new string(input.Where(c => !char.IsWhiteSpace(c)).ToArray());
+    }
     public static void SpawnAndScaleEnemy(string enemyName, int count, Vector3 position, Vector3 scale, bool isGlitchy = false)
     {
         if(RepoDice.ExtendedLogging.Value)
-            foreach (var enmy in EnemyDirector.instance.GetEnemies())
+            foreach (var enmy in getEnemies())
             {
                 RepoDice.SuperLog($"Enemy Found: {enmy.name}");
             }
         try
         {
-            if(EnemyDirector.instance.TryGetEnemyByName(enemyName, out EnemySetup enemy))
+            var enemy = getEnemies().FirstOrDefault(x => x.name == enemyName);
+            if (enemy == null) enemy = getEnemies().FirstOrDefault(x => x.name.Contains(enemyName));
+            if(enemy==null) RepoDice.SuperLog(enemyName + " not found!");
+            if(enemy!=null)
             {
                 RepoDice.SuperLog("Spawning enemy: "+ enemy.name);
                 Vector3 spawnPos = position+Vector3.forward+Vector3.forward;
